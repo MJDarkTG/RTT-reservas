@@ -13,6 +13,7 @@ class RTT_Admin_Stats {
         add_action('admin_menu', [$this, 'add_submenu'], 20);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_scripts']);
         add_action('wp_ajax_rtt_get_stats', [$this, 'ajax_get_stats']);
+        add_action('wp_ajax_rtt_clear_security_log', [$this, 'ajax_clear_security_log']);
     }
 
     /**
@@ -26,6 +27,15 @@ class RTT_Admin_Stats {
             'manage_options',
             'rtt-estadisticas',
             [$this, 'render_page']
+        );
+
+        add_submenu_page(
+            'rtt-reservas',
+            __('Log de Seguridad', 'rtt-reservas'),
+            __('Log de Seguridad', 'rtt-reservas'),
+            'manage_options',
+            'rtt-security-log',
+            [$this, 'render_security_page']
         );
     }
 
@@ -773,6 +783,326 @@ class RTT_Admin_Stats {
             }
         }
         </style>
+        <?php
+    }
+
+    /**
+     * Limpiar log de seguridad via AJAX
+     */
+    public function ajax_clear_security_log() {
+        check_ajax_referer('rtt_security_log_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Sin permisos']);
+        }
+
+        delete_option('rtt_failed_attempts');
+        wp_send_json_success(['message' => __('Log limpiado correctamente', 'rtt-reservas')]);
+    }
+
+    /**
+     * Renderizar página de log de seguridad
+     */
+    public function render_security_page() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        $attempts = get_option('rtt_failed_attempts', []);
+        $attempts = array_reverse($attempts); // Más recientes primero
+
+        // Contar por tipo
+        $counts = [
+            'honeypot' => 0,
+            'rate_limit' => 0,
+            'invalid_nonce' => 0,
+            'total' => count($attempts)
+        ];
+
+        foreach ($attempts as $attempt) {
+            if (isset($counts[$attempt['reason']])) {
+                $counts[$attempt['reason']]++;
+            }
+        }
+
+        $nonce = wp_create_nonce('rtt_security_log_nonce');
+        ?>
+        <div class="wrap rtt-security-wrap">
+            <h1 class="rtt-security-title">
+                <span class="dashicons dashicons-shield-alt"></span>
+                <?php _e('Log de Seguridad', 'rtt-reservas'); ?>
+            </h1>
+
+            <!-- Resumen -->
+            <div class="rtt-security-cards">
+                <div class="rtt-security-card rtt-card-total">
+                    <div class="rtt-card-icon">
+                        <span class="dashicons dashicons-warning"></span>
+                    </div>
+                    <div class="rtt-card-info">
+                        <h3><?php echo $counts['total']; ?></h3>
+                        <p><?php _e('Total Intentos', 'rtt-reservas'); ?></p>
+                    </div>
+                </div>
+
+                <div class="rtt-security-card rtt-card-honeypot">
+                    <div class="rtt-card-icon">
+                        <span class="dashicons dashicons-dismiss"></span>
+                    </div>
+                    <div class="rtt-card-info">
+                        <h3><?php echo $counts['honeypot']; ?></h3>
+                        <p><?php _e('Bots (Honeypot)', 'rtt-reservas'); ?></p>
+                    </div>
+                </div>
+
+                <div class="rtt-security-card rtt-card-rate">
+                    <div class="rtt-card-icon">
+                        <span class="dashicons dashicons-clock"></span>
+                    </div>
+                    <div class="rtt-card-info">
+                        <h3><?php echo $counts['rate_limit']; ?></h3>
+                        <p><?php _e('Rate Limit', 'rtt-reservas'); ?></p>
+                    </div>
+                </div>
+
+                <div class="rtt-security-card rtt-card-nonce">
+                    <div class="rtt-card-icon">
+                        <span class="dashicons dashicons-lock"></span>
+                    </div>
+                    <div class="rtt-card-info">
+                        <h3><?php echo $counts['invalid_nonce']; ?></h3>
+                        <p><?php _e('Nonce Inválido', 'rtt-reservas'); ?></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="rtt-security-actions">
+                <button type="button" id="rtt-clear-log" class="button button-secondary" data-nonce="<?php echo $nonce; ?>">
+                    <span class="dashicons dashicons-trash"></span>
+                    <?php _e('Limpiar Log', 'rtt-reservas'); ?>
+                </button>
+                <span class="rtt-security-note">
+                    <?php _e('Se muestran los últimos 100 intentos fallidos', 'rtt-reservas'); ?>
+                </span>
+            </div>
+
+            <!-- Tabla de intentos -->
+            <div class="rtt-security-table-wrap">
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 160px;"><?php _e('Fecha/Hora', 'rtt-reservas'); ?></th>
+                            <th style="width: 130px;"><?php _e('IP', 'rtt-reservas'); ?></th>
+                            <th style="width: 130px;"><?php _e('Razón', 'rtt-reservas'); ?></th>
+                            <th><?php _e('User Agent', 'rtt-reservas'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($attempts)): ?>
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 40px; color: #666;">
+                                    <span class="dashicons dashicons-yes-alt" style="font-size: 40px; color: #2db742; display: block; margin-bottom: 10px;"></span>
+                                    <?php _e('No hay intentos fallidos registrados. ¡Todo está bien!', 'rtt-reservas'); ?>
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($attempts as $attempt): ?>
+                                <tr>
+                                    <td>
+                                        <strong><?php echo esc_html($attempt['time']); ?></strong>
+                                    </td>
+                                    <td>
+                                        <code><?php echo esc_html($attempt['ip']); ?></code>
+                                    </td>
+                                    <td>
+                                        <?php
+                                        $reason_labels = [
+                                            'honeypot' => '<span class="rtt-reason rtt-reason-honeypot">🤖 Bot</span>',
+                                            'rate_limit' => '<span class="rtt-reason rtt-reason-rate">⏱️ Rate Limit</span>',
+                                            'invalid_nonce' => '<span class="rtt-reason rtt-reason-nonce">🔒 Nonce</span>',
+                                        ];
+                                        echo $reason_labels[$attempt['reason']] ?? esc_html($attempt['reason']);
+                                        ?>
+                                    </td>
+                                    <td>
+                                        <small style="color: #666; word-break: break-all;">
+                                            <?php echo esc_html($attempt['user_agent'] ?? '-'); ?>
+                                        </small>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <style>
+        .rtt-security-wrap {
+            padding: 20px;
+            max-width: 1400px;
+        }
+
+        .rtt-security-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 28px;
+            color: #1d2327;
+            margin-bottom: 25px;
+        }
+
+        .rtt-security-title .dashicons {
+            font-size: 32px;
+            width: 32px;
+            height: 32px;
+            color: #dc2626;
+        }
+
+        .rtt-security-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .rtt-security-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 4px solid #ccc;
+        }
+
+        .rtt-card-total { border-left-color: #64748b; }
+        .rtt-card-honeypot { border-left-color: #dc2626; }
+        .rtt-card-rate { border-left-color: #f59e0b; }
+        .rtt-card-nonce { border-left-color: #8b5cf6; }
+
+        .rtt-card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+        }
+
+        .rtt-card-total .rtt-card-icon .dashicons { color: #64748b; }
+        .rtt-card-honeypot .rtt-card-icon .dashicons { color: #dc2626; }
+        .rtt-card-rate .rtt-card-icon .dashicons { color: #f59e0b; }
+        .rtt-card-nonce .rtt-card-icon .dashicons { color: #8b5cf6; }
+
+        .rtt-card-icon .dashicons {
+            font-size: 24px;
+            width: 24px;
+            height: 24px;
+        }
+
+        .rtt-card-info h3 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .rtt-card-info p {
+            margin: 5px 0 0;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .rtt-security-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .rtt-security-actions .button {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .rtt-security-note {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .rtt-security-table-wrap {
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .rtt-reason {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .rtt-reason-honeypot {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .rtt-reason-rate {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .rtt-reason-nonce {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+        </style>
+
+        <script>
+        jQuery(document).ready(function($) {
+            $('#rtt-clear-log').on('click', function() {
+                if (!confirm('<?php _e('¿Estás seguro de limpiar el log de seguridad?', 'rtt-reservas'); ?>')) {
+                    return;
+                }
+
+                var $btn = $(this);
+                $btn.prop('disabled', true).text('<?php _e('Limpiando...', 'rtt-reservas'); ?>');
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'rtt_clear_security_log',
+                        nonce: $btn.data('nonce')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert(response.data.message || 'Error');
+                            $btn.prop('disabled', false).html('<span class="dashicons dashicons-trash"></span> <?php _e('Limpiar Log', 'rtt-reservas'); ?>');
+                        }
+                    },
+                    error: function() {
+                        alert('Error de conexión');
+                        $btn.prop('disabled', false).html('<span class="dashicons dashicons-trash"></span> <?php _e('Limpiar Log', 'rtt-reservas'); ?>');
+                    }
+                });
+            });
+        });
+        </script>
         <?php
     }
 }
