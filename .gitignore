@@ -1,0 +1,26 @@
+# Claude Code config (local)
+.claude/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# Dependencias (se descargan automáticamente)
+# plugin-update-checker/
+
+# Archivos temporales
+*.tmp
+*.bak
+*.swp
+
+# Node (si usas build tools)
+node_modules/
+
+# Carpeta duplicada (si existe)
+rtt-reservas/
