@@ -50,6 +50,12 @@ class RTT_Shortcode {
                 <input type="hidden" name="lang" value="<?php echo esc_attr($lang); ?>">
                 <input type="hidden" name="precio_tour" id="rtt-precio-tour" value="">
 
+                <!-- Honeypot anti-spam (campo oculto que los bots llenan) -->
+                <div class="rtt-hp-field" aria-hidden="true">
+                    <label for="rtt_website_url">Website</label>
+                    <input type="text" name="rtt_website_url" id="rtt_website_url" value="" tabindex="-1" autocomplete="off">
+                </div>
+
                 <!-- Step 1: Tour y Fecha -->
                 <div class="rtt-step rtt-step-1 active" data-step="1">
                     <div class="rtt-step-header">

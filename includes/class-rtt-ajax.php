@@ -18,6 +18,7 @@ class RTT_Ajax {
         $rate_key = 'rtt_rate_' . md5($ip);
 
         if (get_transient($rate_key)) {
+            $this->log_failed_attempt($ip, 'rate_limit');
             wp_send_json_error([
                 'message' => __('Por favor espera unos segundos antes de enviar otra reserva.', 'rtt-reservas')
             ]);
@@ -27,8 +28,19 @@ class RTT_Ajax {
         // Establecer rate limit por 30 segundos
         set_transient($rate_key, true, 30);
 
+        // Honeypot anti-spam: si el campo tiene valor, es un bot
+        if (!empty($_POST['rtt_website_url'])) {
+            // Registrar intento de spam
+            $this->log_failed_attempt($ip, 'honeypot');
+            wp_send_json_error([
+                'message' => __('Error al procesar la solicitud.', 'rtt-reservas')
+            ]);
+            return;
+        }
+
         // Verificar nonce
         if (!wp_verify_nonce($_POST['rtt_nonce'] ?? '', 'rtt_reserva_nonce')) {
+            $this->log_failed_attempt($ip, 'invalid_nonce');
             wp_send_json_error([
                 'message' => __('Error de seguridad. Recarga la página e intenta de nuevo.', 'rtt-reservas')
             ]);
@@ -185,12 +197,38 @@ class RTT_Ajax {
             'pasajeros' => []
         ];
 
-        // Sanitizar pasajeros
+        // Sanitizar y validar pasajeros
         foreach ($post_data['pasajeros'] as $index => $passenger) {
+            $tipo_doc = sanitize_text_field($passenger['tipo_doc'] ?? 'DNI');
+            $nro_doc = sanitize_text_field($passenger['nro_doc'] ?? '');
+            $nombre = sanitize_text_field($passenger['nombre'] ?? '');
+
+            // Validar que el nombre no esté vacío
+            if (empty($nombre)) {
+                $passenger_num = $index + 1;
+                return new WP_Error(
+                    'invalid_passenger_name',
+                    $lang === 'en'
+                        ? sprintf('Passenger %d: Name is required.', $passenger_num)
+                        : sprintf('Pasajero %d: El nombre es requerido.', $passenger_num)
+                );
+            }
+
+            // Validar formato de documento
+            if (!empty($nro_doc) && !$this->validate_document($tipo_doc, $nro_doc)) {
+                $passenger_num = $index + 1;
+                return new WP_Error(
+                    'invalid_document',
+                    $lang === 'en'
+                        ? sprintf('Passenger %d: Invalid document format. DNI must be 7-9 digits, Passport 6-15 alphanumeric characters.', $passenger_num)
+                        : sprintf('Pasajero %d: Formato de documento inválido. DNI debe tener 7-9 dígitos, Pasaporte 6-15 caracteres alfanuméricos.', $passenger_num)
+                );
+            }
+
             $data['pasajeros'][] = [
-                'tipo_doc' => sanitize_text_field($passenger['tipo_doc'] ?? 'DNI'),
-                'nro_doc' => sanitize_text_field($passenger['nro_doc'] ?? ''),
-                'nombre' => sanitize_text_field($passenger['nombre'] ?? ''),
+                'tipo_doc' => $tipo_doc,
+                'nro_doc' => strtoupper($nro_doc),
+                'nombre' => $nombre,
                 'genero' => sanitize_text_field($passenger['genero'] ?? 'M'),
                 'fecha_nacimiento' => sanitize_text_field($passenger['fecha_nacimiento'] ?? ''),
                 'nacionalidad' => sanitize_text_field($passenger['nacionalidad'] ?? ''),
@@ -199,6 +237,53 @@ class RTT_Ajax {
         }
 
         return $data;
+    }
+
+    /**
+     * Validar formato de documento
+     */
+    private function validate_document($tipo_doc, $nro_doc) {
+        $nro_doc = trim($nro_doc);
+
+        if (empty($nro_doc)) {
+            return false;
+        }
+
+        switch (strtoupper($tipo_doc)) {
+            case 'DNI':
+                // DNI: 8 dígitos numéricos (Perú) o 7-9 dígitos (otros países)
+                return preg_match('/^[0-9]{7,9}$/', $nro_doc);
+
+            case 'PASAPORTE':
+                // Pasaporte: alfanumérico, 6-15 caracteres
+                return preg_match('/^[A-Z0-9]{6,15}$/i', $nro_doc);
+
+            default:
+                // Otros documentos: mínimo 5 caracteres alfanuméricos
+                return preg_match('/^[A-Z0-9]{5,20}$/i', $nro_doc);
+        }
+    }
+
+    /**
+     * Registrar intento fallido (para log de seguridad)
+     */
+    private function log_failed_attempt($ip, $reason) {
+        $log_key = 'rtt_failed_attempts';
+        $attempts = get_option($log_key, []);
+
+        // Mantener solo los últimos 100 intentos
+        if (count($attempts) >= 100) {
+            $attempts = array_slice($attempts, -99);
+        }
+
+        $attempts[] = [
+            'ip' => $ip,
+            'reason' => $reason,
+            'time' => current_time('mysql'),
+            'user_agent' => substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 200)
+        ];
+
+        update_option($log_key, $attempts, false);
     }
 
     /**
