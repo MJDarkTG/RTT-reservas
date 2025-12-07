@@ -13,11 +13,26 @@ class RTT_Ajax {
      * Procesar envío de reserva
      */
     public function submit_reserva() {
+        // Rate limiting: máximo 1 envío cada 30 segundos por IP
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $rate_key = 'rtt_rate_' . md5($ip);
+
+        if (get_transient($rate_key)) {
+            wp_send_json_error([
+                'message' => __('Por favor espera unos segundos antes de enviar otra reserva.', 'rtt-reservas')
+            ]);
+            return;
+        }
+
+        // Establecer rate limit por 30 segundos
+        set_transient($rate_key, true, 30);
+
         // Verificar nonce
         if (!wp_verify_nonce($_POST['rtt_nonce'] ?? '', 'rtt_reserva_nonce')) {
             wp_send_json_error([
                 'message' => __('Error de seguridad. Recarga la página e intenta de nuevo.', 'rtt-reservas')
             ]);
+            return;
         }
 
         // Sanitizar y validar datos
@@ -139,6 +154,15 @@ class RTT_Ajax {
             return new WP_Error(
                 'no_passengers',
                 $lang === 'en' ? 'You must add at least one passenger.' : 'Debes agregar al menos un pasajero.'
+            );
+        }
+
+        // Validar límite de pasajeros (máximo 20)
+        $num_pasajeros = count($post_data['pasajeros']);
+        if ($num_pasajeros > 20) {
+            return new WP_Error(
+                'too_many_passengers',
+                $lang === 'en' ? 'Maximum 20 passengers allowed per reservation.' : 'Máximo 20 pasajeros permitidos por reserva.'
             );
         }
 

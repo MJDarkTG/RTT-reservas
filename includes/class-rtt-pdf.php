@@ -10,6 +10,15 @@
 
   require_once RTT_RESERVAS_PLUGIN_DIR . 'lib/fpdf/fpdf.php';
 
+  /**
+   * Función compatible con PHP 8.1+ para convertir UTF-8 a ISO-8859-1
+   * Reemplaza rtt_utf8_to_iso() que está deprecated
+   */
+  function rtt_utf8_to_iso($text) {
+      if (empty($text)) return '';
+      return iconv('UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $text) ?: $text;
+  }
+
   class RTT_PDF_Table extends FPDF {
       protected $widths;
       protected $aligns;
@@ -52,7 +61,7 @@
               }
               $this->Rect($x, $y, $w, $h);
 
-              $this->MultiCell($w, $this->lineHeight, utf8_decode($data[$i]), 0, $a);
+              $this->MultiCell($w, $this->lineHeight, rtt_utf8_to_iso($data[$i]), 0, $a);
               $this->SetXY($x + $w, $y);
           }
           $this->Ln($h);
@@ -171,7 +180,7 @@
 
           // Numero de pagina a la derecha
           $this->SetY(-10);
-          $this->Cell(0, 4, utf8_decode('Pagina ') . $this->PageNo() . '/{nb}', 0, 0, 'R');
+          $this->Cell(0, 4, rtt_utf8_to_iso('Pagina ') . $this->PageNo() . '/{nb}', 0, 0, 'R');
       }
   }
 
@@ -205,7 +214,7 @@
           $pdf->SetFont('Helvetica', 'B', 16);
           $pdf->SetTextColor(212, 160, 23);
           $title = $lang === 'en' ? 'BOOKING CONFIRMATION' : 'CONFIRMACION DE RESERVA';
-          $pdf->Cell(0, 10, utf8_decode($title), 0, 1, 'C');
+          $pdf->Cell(0, 10, rtt_utf8_to_iso($title), 0, 1, 'C');
 
           $pdf->SetFont('Helvetica', '', 10);
           $pdf->SetTextColor(124, 179, 66);
@@ -225,7 +234,7 @@
           $pdf->SetTextColor(255, 255, 255);
           $pdf->SetFont('Helvetica', 'B', 11);
           $title = $lang === 'en' ? '  TOUR DETAILS' : '  DETALLES DEL TOUR';
-          $pdf->Cell(0, 8, utf8_decode($title), 0, 1, 'L', true);
+          $pdf->Cell(0, 8, rtt_utf8_to_iso($title), 0, 1, 'L', true);
 
           $pdf->SetFillColor(255, 249, 230);
           $pdf->SetTextColor(0, 0, 0);
@@ -242,7 +251,7 @@
           $pdf->SetFont('Helvetica', 'B', 10);
           $pdf->Cell(25, 6, 'Tour:', 0, 0, 'L');
           $pdf->SetFont('Helvetica', '', 10);
-          $pdf->MultiCell(150, 6, utf8_decode($data['tour']), 0, 'L');
+          $pdf->MultiCell(150, 6, rtt_utf8_to_iso($data['tour']), 0, 'L');
 
           $pdf->SetX(20);
           $pdf->SetFont('Helvetica', 'B', 10);
@@ -259,7 +268,7 @@
               $pdf->Cell(25, 6, ($lang === 'en' ? 'Price:' : 'Precio:'), 0, 0, 'L');
               $pdf->SetTextColor(212, 160, 23);
               $pdf->SetFont('Helvetica', 'B', 11);
-              $pdf->Cell(0, 6, utf8_decode($data['precio_tour']), 0, 1, 'L');
+              $pdf->Cell(0, 6, rtt_utf8_to_iso($data['precio_tour']), 0, 1, 'L');
           } else {
               $pdf->Ln();
           }
@@ -275,7 +284,7 @@
           $pdf->SetTextColor(255, 255, 255);
           $pdf->SetFont('Helvetica', 'B', 11);
           $title = $lang === 'en' ? '  CONTACT INFORMATION' : '  DATOS DE CONTACTO';
-          $pdf->Cell(0, 8, utf8_decode($title), 0, 1, 'L', true);
+          $pdf->Cell(0, 8, rtt_utf8_to_iso($title), 0, 1, 'L', true);
 
           $pdf->Ln(3);
           $pdf->SetTextColor(0, 0, 0);
@@ -288,7 +297,7 @@
           $pdf->SetFont('Helvetica', 'B', 9);
           $pdf->Cell(25, 6, $labels[0], 0, 0, 'L');
           $pdf->SetFont('Helvetica', '', 10);
-          $pdf->Cell(70, 6, utf8_decode($rep['nombre']), 0, 0, 'L');
+          $pdf->Cell(70, 6, rtt_utf8_to_iso($rep['nombre']), 0, 0, 'L');
 
           $pdf->SetFont('Helvetica', 'B', 9);
           $pdf->Cell(25, 6, $labels[3], 0, 0, 'L');
@@ -303,7 +312,7 @@
           $pdf->SetFont('Helvetica', 'B', 9);
           $pdf->Cell(25, 6, $labels[2], 0, 0, 'L');
           $pdf->SetFont('Helvetica', '', 10);
-          $pdf->Cell(0, 6, utf8_decode($rep['pais']), 0, 1, 'L');
+          $pdf->Cell(0, 6, rtt_utf8_to_iso($rep['pais']), 0, 1, 'L');
 
           $pdf->Ln(8);
       }
@@ -314,7 +323,7 @@
           $pdf->SetFont('Helvetica', 'B', 11);
           $count = count($data['pasajeros']);
           $title = $lang === 'en' ? '  PASSENGERS (' . $count . ')' : '  PASAJEROS (' . $count . ')';
-          $pdf->Cell(0, 8, utf8_decode($title), 0, 1, 'L', true);
+          $pdf->Cell(0, 8, rtt_utf8_to_iso($title), 0, 1, 'L', true);
           $pdf->Ln(3);
 
           $headers = $lang === 'en'
@@ -329,7 +338,7 @@
           $pdf->SetDrawColor(124, 179, 66);
 
           for ($i = 0; $i < count($headers); $i++) {
-              $pdf->Cell($widths[$i], 7, utf8_decode($headers[$i]), 1, 0, 'C', true);
+              $pdf->Cell($widths[$i], 7, rtt_utf8_to_iso($headers[$i]), 1, 0, 'C', true);
           }
           $pdf->Ln();
 
@@ -374,13 +383,13 @@
               ? 'Thank you for booking with Ready To Travel Peru!'
               : 'Gracias por reservar con Ready To Travel Peru!';
 
-          $pdf->Cell(180, 5, utf8_decode($message), 0, 1, 'C');
+          $pdf->Cell(180, 5, rtt_utf8_to_iso($message), 0, 1, 'C');
 
           $pdf->SetFont('Helvetica', '', 9);
           $submessage = $lang === 'en'
               ? 'We will contact you soon to confirm your reservation.'
               : 'Nos pondremos en contacto pronto para confirmar su reserva.';
-          $pdf->Cell(180, 5, utf8_decode($submessage), 0, 1, 'C');
+          $pdf->Cell(180, 5, rtt_utf8_to_iso($submessage), 0, 1, 'C');
 
           // WhatsApp destacado con link clickeable
           $pdf->Ln(2);
@@ -391,13 +400,13 @@
           $whatsapp_link = 'https://wa.me/51992515665';
 
           // Calcular posición para centrar
-          $label_width = $pdf->GetStringWidth(utf8_decode($whatsapp_label));
+          $label_width = $pdf->GetStringWidth(rtt_utf8_to_iso($whatsapp_label));
           $number_width = $pdf->GetStringWidth($whatsapp_number);
           $total_width = $label_width + $number_width;
           $start_x = (210 - $total_width) / 2;
 
           $pdf->SetX($start_x);
-          $pdf->Cell($label_width, 6, utf8_decode($whatsapp_label), 0, 0, 'L');
+          $pdf->Cell($label_width, 6, rtt_utf8_to_iso($whatsapp_label), 0, 0, 'L');
 
           // Número con link y subrayado
           $pdf->SetTextColor(255, 255, 100);
