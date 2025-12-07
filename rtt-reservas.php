@@ -180,11 +180,16 @@ final class RTT_Reservas {
                 true
             );
 
+            // Obtener opciones
+            $options = get_option('rtt_reservas_options', []);
+            $max_passengers = isset($options['max_passengers']) ? absint($options['max_passengers']) : 20;
+
             // Pasar variables a JavaScript
             wp_localize_script('rtt-reservas-js', 'rttReservas', [
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('rtt_reserva_nonce'),
                 'lang' => $this->get_current_language(),
+                'maxPassengers' => $max_passengers,
                 'i18n' => $this->get_js_translations()
             ]);
         }

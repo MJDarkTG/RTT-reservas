@@ -157,12 +157,16 @@ class RTT_Ajax {
             );
         }
 
-        // Validar límite de pasajeros (máximo 20)
+        // Validar límite de pasajeros
+        $options = get_option('rtt_reservas_options', []);
+        $max_passengers = isset($options['max_passengers']) ? absint($options['max_passengers']) : 20;
         $num_pasajeros = count($post_data['pasajeros']);
-        if ($num_pasajeros > 20) {
+        if ($num_pasajeros > $max_passengers) {
             return new WP_Error(
                 'too_many_passengers',
-                $lang === 'en' ? 'Maximum 20 passengers allowed per reservation.' : 'Máximo 20 pasajeros permitidos por reserva.'
+                $lang === 'en'
+                    ? sprintf('Maximum %d passengers allowed per reservation.', $max_passengers)
+                    : sprintf('Máximo %d pasajeros permitidos por reserva.', $max_passengers)
             );
         }
 

@@ -99,6 +99,23 @@ class RTT_Admin {
             'rtt_email_section',
             ['field' => 'email_subject_en']
         );
+
+        // Sección Configuración de Reservas
+        add_settings_section(
+            'rtt_booking_section',
+            __('Configuración de Reservas', 'rtt-reservas'),
+            null,
+            'rtt-reservas'
+        );
+
+        add_settings_field(
+            'max_passengers',
+            __('Máximo de pasajeros por reserva', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_booking_section',
+            ['field' => 'max_passengers']
+        );
     }
 
     /**
@@ -133,6 +150,11 @@ class RTT_Admin {
                 echo '<p class="description">' . __('465 para SSL, 587 para TLS', 'rtt-reservas') . '</p>';
                 break;
 
+            case 'max_passengers':
+                echo '<input type="number" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value ?: '20') . '" class="small-text" min="1" max="100">';
+                echo '<p class="description">' . __('Número máximo de pasajeros permitidos por reserva (por defecto: 20)', 'rtt-reservas') . '</p>';
+                break;
+
             default:
                 echo '<input type="text" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value) . '" class="regular-text">';
         }
@@ -159,6 +181,10 @@ class RTT_Admin {
 
         // La contraseña se guarda tal cual (ya está en la BD encriptada por WP)
         $sanitized['smtp_pass'] = $input['smtp_pass'] ?? '';
+
+        // Máximo de pasajeros (entre 1 y 100, por defecto 20)
+        $max_passengers = absint($input['max_passengers'] ?? 20);
+        $sanitized['max_passengers'] = max(1, min(100, $max_passengers));
 
         return $sanitized;
     }
