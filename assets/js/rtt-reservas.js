@@ -248,14 +248,28 @@
         var $countInput = $('#rtt-cantidad');
         var $passengersContainer = $('#rtt-passengers-container');
 
-        // Agregar pasajero
+        // Agregar pasajero (máximo 20)
+        var MAX_PASSENGERS = 20;
+
         $plusBtn.on('click', function() {
+            if (passengerCount >= MAX_PASSENGERS) {
+                alert(rttReservas.lang === 'en'
+                    ? 'Maximum 20 passengers per reservation.'
+                    : 'Máximo 20 pasajeros por reserva.');
+                return;
+            }
+
             passengerCount++;
             $countInput.val(passengerCount);
             addPassenger(passengerCount);
 
             // Habilitar botón menos
             $minusBtn.prop('disabled', false);
+
+            // Deshabilitar botón plus si llegamos al máximo
+            if (passengerCount >= MAX_PASSENGERS) {
+                $plusBtn.prop('disabled', true);
+            }
         });
 
         // Quitar pasajero
