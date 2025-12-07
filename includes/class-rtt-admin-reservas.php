@@ -78,13 +78,19 @@ class RTT_Admin_Reservas {
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         $estado = isset($_GET['estado']) ? sanitize_text_field($_GET['estado']) : '';
         $buscar = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
+        $tour_filter = isset($_GET['tour']) ? sanitize_text_field($_GET['tour']) : '';
+        $fecha_desde = isset($_GET['fecha_desde']) ? sanitize_text_field($_GET['fecha_desde']) : '';
+        $fecha_hasta = isset($_GET['fecha_hasta']) ? sanitize_text_field($_GET['fecha_hasta']) : '';
 
         // Obtener reservas
         $result = RTT_Database::get_reservas([
             'page' => $page,
             'per_page' => 20,
             'estado' => $estado,
-            'buscar' => $buscar
+            'buscar' => $buscar,
+            'tour' => $tour_filter,
+            'fecha_desde' => $fecha_desde,
+            'fecha_hasta' => $fecha_hasta
         ]);
 
         $reservas = $result['items'];
@@ -128,6 +134,7 @@ class RTT_Admin_Reservas {
             </div>
 
             <!-- Filtros -->
+            <?php $tours_list = RTT_Database::get_tours_list(); ?>
             <div class="rtt-filters">
                 <form method="get" class="rtt-filter-form">
                     <input type="hidden" name="page" value="rtt-reservas-list">
@@ -141,13 +148,32 @@ class RTT_Admin_Reservas {
                         <?php endforeach; ?>
                     </select>
 
+                    <?php if (!empty($tours_list)): ?>
+                    <select name="tour" class="rtt-filter-select">
+                        <option value=""><?php _e('Todos los tours', 'rtt-reservas'); ?></option>
+                        <?php foreach ($tours_list as $tour_name): ?>
+                            <option value="<?php echo esc_attr($tour_name); ?>" <?php selected($tour_filter, $tour_name); ?>>
+                                <?php echo esc_html(wp_trim_words($tour_name, 6)); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php endif; ?>
+
+                    <input type="date" name="fecha_desde" value="<?php echo esc_attr($fecha_desde); ?>"
+                           title="<?php _e('Fecha desde', 'rtt-reservas'); ?>"
+                           class="rtt-filter-date">
+
+                    <input type="date" name="fecha_hasta" value="<?php echo esc_attr($fecha_hasta); ?>"
+                           title="<?php _e('Fecha hasta', 'rtt-reservas'); ?>"
+                           class="rtt-filter-date">
+
                     <input type="search" name="s" value="<?php echo esc_attr($buscar); ?>"
-                           placeholder="<?php _e('Buscar por código, nombre, email...', 'rtt-reservas'); ?>"
+                           placeholder="<?php _e('Buscar...', 'rtt-reservas'); ?>"
                            class="rtt-search-input">
 
                     <button type="submit" class="button"><?php _e('Filtrar', 'rtt-reservas'); ?></button>
 
-                    <?php if ($estado || $buscar): ?>
+                    <?php if ($estado || $buscar || $tour_filter || $fecha_desde || $fecha_hasta): ?>
                         <a href="<?php echo admin_url('admin.php?page=rtt-reservas-list'); ?>" class="button">
                             <?php _e('Limpiar', 'rtt-reservas'); ?>
                         </a>
@@ -287,6 +313,9 @@ class RTT_Admin_Reservas {
                             $base_url = admin_url('admin.php?page=rtt-reservas-list');
                             if ($estado) $base_url .= '&estado=' . urlencode($estado);
                             if ($buscar) $base_url .= '&s=' . urlencode($buscar);
+                            if ($tour_filter) $base_url .= '&tour=' . urlencode($tour_filter);
+                            if ($fecha_desde) $base_url .= '&fecha_desde=' . urlencode($fecha_desde);
+                            if ($fecha_hasta) $base_url .= '&fecha_hasta=' . urlencode($fecha_hasta);
 
                             if ($page > 1): ?>
                                 <a class="prev-page button" href="<?php echo $base_url . '&paged=' . ($page - 1); ?>">‹</a>

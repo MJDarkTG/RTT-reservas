@@ -64,12 +64,25 @@
 }
 
 .rtt-filter-select {
-    min-width: 180px;
+    min-width: 150px;
+    max-width: 200px;
+}
+
+.rtt-filter-date {
+    padding: 5px 8px;
+    min-width: 130px;
 }
 
 .rtt-search-input {
-    min-width: 300px;
+    min-width: 180px;
     padding: 5px 10px;
+}
+
+/* Export section */
+.rtt-export-section {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #ccd0d4;
 }
 
 /* Tabla */

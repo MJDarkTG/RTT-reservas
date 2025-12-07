@@ -142,6 +142,9 @@ class RTT_Database {
             'page' => 1,
             'estado' => '',
             'buscar' => '',
+            'tour' => '',
+            'fecha_desde' => '',
+            'fecha_hasta' => '',
             'orderby' => 'fecha_creacion',
             'order' => 'DESC'
         ];
@@ -161,6 +164,21 @@ class RTT_Database {
             $where .= ' AND (codigo LIKE %s OR nombre_representante LIKE %s OR email LIKE %s OR tour LIKE %s)';
             $search = '%' . $wpdb->esc_like($args['buscar']) . '%';
             $values = array_merge($values, [$search, $search, $search, $search]);
+        }
+
+        if (!empty($args['tour'])) {
+            $where .= ' AND tour LIKE %s';
+            $values[] = '%' . $wpdb->esc_like($args['tour']) . '%';
+        }
+
+        if (!empty($args['fecha_desde'])) {
+            $where .= ' AND fecha_tour >= %s';
+            $values[] = $args['fecha_desde'];
+        }
+
+        if (!empty($args['fecha_hasta'])) {
+            $where .= ' AND fecha_tour <= %s';
+            $values[] = $args['fecha_hasta'];
         }
 
         $orderby = in_array($args['orderby'], ['fecha_creacion', 'fecha_tour', 'codigo', 'estado']) ? $args['orderby'] : 'fecha_creacion';
@@ -188,6 +206,15 @@ class RTT_Database {
             'total' => intval($total),
             'pages' => ceil($total / $args['per_page'])
         ];
+    }
+
+    /**
+     * Obtener lista de tours únicos (para filtro)
+     */
+    public static function get_tours_list() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_reservas';
+        return $wpdb->get_col("SELECT DISTINCT tour FROM $table ORDER BY tour ASC");
     }
 
     /**

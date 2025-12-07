@@ -100,6 +100,68 @@ class RTT_Admin {
             ['field' => 'email_subject_en']
         );
 
+        // Sección Personalización del Email
+        add_settings_section(
+            'rtt_email_template_section',
+            __('Personalización del Email', 'rtt-reservas'),
+            [$this, 'email_template_section_callback'],
+            'rtt-reservas'
+        );
+
+        add_settings_field(
+            'email_logo_url',
+            __('URL del Logo', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_email_template_section',
+            ['field' => 'email_logo_url']
+        );
+
+        add_settings_field(
+            'email_slogan_es',
+            __('Slogan (Español)', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_email_template_section',
+            ['field' => 'email_slogan_es']
+        );
+
+        add_settings_field(
+            'email_slogan_en',
+            __('Slogan (Inglés)', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_email_template_section',
+            ['field' => 'email_slogan_en']
+        );
+
+        add_settings_field(
+            'email_contact_email',
+            __('Email de contacto', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_email_template_section',
+            ['field' => 'email_contact_email']
+        );
+
+        add_settings_field(
+            'email_whatsapp',
+            __('WhatsApp', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_email_template_section',
+            ['field' => 'email_whatsapp']
+        );
+
+        add_settings_field(
+            'email_website',
+            __('Sitio Web', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_email_template_section',
+            ['field' => 'email_website']
+        );
+
         // Sección Configuración de Reservas
         add_settings_section(
             'rtt_booking_section',
@@ -123,6 +185,13 @@ class RTT_Admin {
      */
     public function smtp_section_callback() {
         echo '<p>' . __('Configura los datos SMTP para el envío de correos. Si usas Gmail, usa smtp.gmail.com y genera una contraseña de aplicación.', 'rtt-reservas') . '</p>';
+    }
+
+    /**
+     * Callback de sección plantilla email
+     */
+    public function email_template_section_callback() {
+        echo '<p>' . __('Personaliza la apariencia del email de confirmación que reciben los clientes.', 'rtt-reservas') . '</p>';
     }
 
     /**
@@ -155,6 +224,38 @@ class RTT_Admin {
                 echo '<p class="description">' . __('Número máximo de pasajeros permitidos por reserva (por defecto: 20)', 'rtt-reservas') . '</p>';
                 break;
 
+            case 'email_logo_url':
+                $default = 'http://readytotravelperu.com/wp-content/uploads/2022/08/ready-to-travel-peru.jpg';
+                echo '<input type="url" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value ?: $default) . '" class="large-text">';
+                echo '<p class="description">' . __('URL completa del logo que aparecerá en el email', 'rtt-reservas') . '</p>';
+                break;
+
+            case 'email_slogan_es':
+                $default = 'Donde cada viaje se convierte en un recuerdo inolvidable';
+                echo '<input type="text" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value ?: $default) . '" class="large-text">';
+                break;
+
+            case 'email_slogan_en':
+                $default = 'Where every journey becomes an unforgettable memory';
+                echo '<input type="text" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value ?: $default) . '" class="large-text">';
+                break;
+
+            case 'email_contact_email':
+                $default = 'reservas@readytotravelperu.com';
+                echo '<input type="email" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value ?: $default) . '" class="regular-text">';
+                break;
+
+            case 'email_whatsapp':
+                $default = '+51 992 515 665';
+                echo '<input type="text" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value ?: $default) . '" class="regular-text">';
+                echo '<p class="description">' . __('Número con código de país (ej: +51 999 999 999)', 'rtt-reservas') . '</p>';
+                break;
+
+            case 'email_website':
+                $default = 'www.readytotravelperu.com';
+                echo '<input type="text" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value ?: $default) . '" class="regular-text">';
+                break;
+
             default:
                 echo '<input type="text" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value) . '" class="regular-text">';
         }
@@ -185,6 +286,14 @@ class RTT_Admin {
         // Máximo de pasajeros (entre 1 y 100, por defecto 20)
         $max_passengers = absint($input['max_passengers'] ?? 20);
         $sanitized['max_passengers'] = max(1, min(100, $max_passengers));
+
+        // Campos de plantilla de email
+        $sanitized['email_logo_url'] = esc_url_raw($input['email_logo_url'] ?? '');
+        $sanitized['email_slogan_es'] = sanitize_text_field($input['email_slogan_es'] ?? '');
+        $sanitized['email_slogan_en'] = sanitize_text_field($input['email_slogan_en'] ?? '');
+        $sanitized['email_contact_email'] = sanitize_email($input['email_contact_email'] ?? '');
+        $sanitized['email_whatsapp'] = sanitize_text_field($input['email_whatsapp'] ?? '');
+        $sanitized['email_website'] = sanitize_text_field($input['email_website'] ?? '');
 
         return $sanitized;
     }
