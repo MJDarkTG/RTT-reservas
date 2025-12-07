@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 
 class RTT_Database {
 
-    const DB_VERSION = '1.2';
+    const DB_VERSION = '1.3';
 
     /**
      * Crear tablas en la base de datos
@@ -41,7 +41,8 @@ class RTT_Database {
             UNIQUE KEY codigo (codigo),
             KEY estado (estado),
             KEY fecha_tour (fecha_tour),
-            KEY fecha_creacion (fecha_creacion)
+            KEY fecha_creacion (fecha_creacion),
+            KEY tour (tour(100))
         ) $charset_collate;";
 
         // Tabla de pasajeros
@@ -64,7 +65,30 @@ class RTT_Database {
         dbDelta($sql_reservas);
         dbDelta($sql_pasajeros);
 
+        // Agregar índice de tour si no existe (para instalaciones existentes)
+        self::maybe_add_tour_index();
+
         update_option('rtt_db_version', self::DB_VERSION);
+    }
+
+    /**
+     * Agregar índice de tour si no existe
+     */
+    private static function maybe_add_tour_index() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_reservas';
+
+        // Verificar si el índice ya existe
+        $index_exists = $wpdb->get_var(
+            "SELECT COUNT(*) FROM information_schema.statistics
+             WHERE table_schema = DATABASE()
+             AND table_name = '$table'
+             AND index_name = 'tour'"
+        );
+
+        if (!$index_exists) {
+            $wpdb->query("ALTER TABLE $table ADD INDEX tour (tour(100))");
+        }
     }
 
     /**
@@ -100,6 +124,9 @@ class RTT_Database {
         if ($result === false) {
             return new WP_Error('db_error', 'Error al guardar la reserva');
         }
+
+        // Invalidar caché
+        self::invalidate_all_cache();
 
         return [
             'id' => $wpdb->insert_id,
@@ -209,12 +236,27 @@ class RTT_Database {
     }
 
     /**
-     * Obtener lista de tours únicos (para filtro)
+     * Obtener lista de tours únicos (para filtro) - Con caché
      */
     public static function get_tours_list() {
-        global $wpdb;
-        $table = $wpdb->prefix . 'rtt_reservas';
-        return $wpdb->get_col("SELECT DISTINCT tour FROM $table ORDER BY tour ASC");
+        $cache_key = 'rtt_tours_list';
+        $tours = get_transient($cache_key);
+
+        if ($tours === false) {
+            global $wpdb;
+            $table = $wpdb->prefix . 'rtt_reservas';
+            $tours = $wpdb->get_col("SELECT DISTINCT tour FROM $table ORDER BY tour ASC");
+            set_transient($cache_key, $tours, HOUR_IN_SECONDS); // Caché por 1 hora
+        }
+
+        return $tours;
+    }
+
+    /**
+     * Invalidar caché de tours
+     */
+    public static function invalidate_tours_cache() {
+        delete_transient('rtt_tours_list');
     }
 
     /**
@@ -273,6 +315,10 @@ class RTT_Database {
         $table = $wpdb->prefix . 'rtt_reservas';
         $result = $wpdb->update($table, ['estado' => $estado], ['id' => $id], ['%s'], ['%d']);
 
+        if ($result !== false) {
+            self::invalidate_stats_cache(); // Solo stats, no tours
+        }
+
         return $result !== false;
     }
 
@@ -300,28 +346,63 @@ class RTT_Database {
 
         // Eliminar reserva
         $table_reservas = $wpdb->prefix . 'rtt_reservas';
-        return $wpdb->delete($table_reservas, ['id' => $id], ['%d']);
+        $result = $wpdb->delete($table_reservas, ['id' => $id], ['%d']);
+
+        if ($result) {
+            self::invalidate_all_cache();
+        }
+
+        return $result;
     }
 
     /**
-     * Obtener estadísticas
+     * Obtener estadísticas - Optimizado con una sola query y caché
      */
     public static function get_stats() {
-        global $wpdb;
+        $cache_key = 'rtt_reservas_stats';
+        $stats = get_transient($cache_key);
 
-        $table = $wpdb->prefix . 'rtt_reservas';
+        if ($stats === false) {
+            global $wpdb;
+            $table = $wpdb->prefix . 'rtt_reservas';
 
-        $stats = [
-            'total' => $wpdb->get_var("SELECT COUNT(*) FROM $table"),
-            'pendientes' => $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE estado = 'pendiente'"),
-            'confirmadas' => $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE estado = 'confirmada'"),
-            'este_mes' => $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $table WHERE MONTH(fecha_creacion) = %d AND YEAR(fecha_creacion) = %d",
+            // Una sola query para todas las estadísticas
+            $result = $wpdb->get_row($wpdb->prepare(
+                "SELECT
+                    COUNT(*) as total,
+                    SUM(CASE WHEN estado = 'pendiente' THEN 1 ELSE 0 END) as pendientes,
+                    SUM(CASE WHEN estado = 'confirmada' THEN 1 ELSE 0 END) as confirmadas,
+                    SUM(CASE WHEN MONTH(fecha_creacion) = %d AND YEAR(fecha_creacion) = %d THEN 1 ELSE 0 END) as este_mes
+                FROM $table",
                 date('n'),
                 date('Y')
-            )),
-        ];
+            ));
+
+            $stats = [
+                'total' => intval($result->total ?? 0),
+                'pendientes' => intval($result->pendientes ?? 0),
+                'confirmadas' => intval($result->confirmadas ?? 0),
+                'este_mes' => intval($result->este_mes ?? 0),
+            ];
+
+            set_transient($cache_key, $stats, 5 * MINUTE_IN_SECONDS); // Caché por 5 minutos
+        }
 
         return $stats;
+    }
+
+    /**
+     * Invalidar caché de estadísticas
+     */
+    public static function invalidate_stats_cache() {
+        delete_transient('rtt_reservas_stats');
+    }
+
+    /**
+     * Invalidar todos los cachés (llamar al insertar/actualizar/eliminar)
+     */
+    public static function invalidate_all_cache() {
+        self::invalidate_tours_cache();
+        self::invalidate_stats_cache();
     }
 }

@@ -11,6 +11,7 @@
         initViewDetail();
         initModal();
         initExportToggle();
+        initLazyLoadPasajeros();
     });
 
     /**
@@ -176,6 +177,51 @@
                 $(this).remove();
             });
         }, 3000);
+    }
+
+    /**
+     * Lazy loading de pasajeros en el modal
+     */
+    function initLazyLoadPasajeros() {
+        // Usar delegación de eventos porque el botón se carga dinámicamente
+        $(document).on('click', '.rtt-load-more-pasajeros', function() {
+            var $btn = $(this);
+            var reservaId = $btn.data('reserva-id');
+            var offset = $btn.data('offset');
+            var total = $btn.data('total');
+
+            $btn.prop('disabled', true).text('Cargando...');
+
+            $.get(rttAdminReservas.ajaxUrl, {
+                action: 'rtt_get_pasajeros',
+                nonce: rttAdminReservas.nonce,
+                reserva_id: reservaId,
+                offset: offset,
+                limit: 10
+            }, function(response) {
+                if (response.success) {
+                    // Agregar filas a la tabla
+                    $('#rtt-pasajeros-tbody').append(response.data.html);
+
+                    // Actualizar contador
+                    $('#rtt-pasajeros-loaded').text(response.data.loaded);
+
+                    if (response.data.has_more) {
+                        // Actualizar botón
+                        var remaining = total - response.data.loaded;
+                        $btn.data('offset', response.data.loaded);
+                        $btn.prop('disabled', false).text('Cargar más (' + remaining + ' restantes)');
+                    } else {
+                        // Ocultar botón
+                        $btn.parent().remove();
+                    }
+                } else {
+                    $btn.prop('disabled', false).text('Error - Reintentar');
+                }
+            }).fail(function() {
+                $btn.prop('disabled', false).text('Error - Reintentar');
+            });
+        });
     }
 
 })(jQuery);

@@ -18,6 +18,7 @@ class RTT_Admin_Reservas {
         add_action('wp_ajax_rtt_update_estado', [$this, 'ajax_update_estado']);
         add_action('wp_ajax_rtt_delete_reserva', [$this, 'ajax_delete_reserva']);
         add_action('wp_ajax_rtt_get_reserva_detail', [$this, 'ajax_get_reserva_detail']);
+        add_action('wp_ajax_rtt_get_pasajeros', [$this, 'ajax_get_pasajeros']);
         add_action('admin_init', [$this, 'handle_export_csv']);
     }
 
@@ -431,6 +432,62 @@ class RTT_Admin_Reservas {
     }
 
     /**
+     * AJAX: Obtener pasajeros (lazy loading)
+     */
+    public function ajax_get_pasajeros() {
+        check_ajax_referer('rtt_admin_reservas', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Sin permisos', 'rtt-reservas')]);
+        }
+
+        $reserva_id = intval($_GET['reserva_id'] ?? 0);
+        $offset = intval($_GET['offset'] ?? 0);
+        $limit = intval($_GET['limit'] ?? 10);
+
+        if (!$reserva_id) {
+            wp_send_json_error(['message' => __('ID inválido', 'rtt-reservas')]);
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_pasajeros';
+
+        $pasajeros = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $table WHERE reserva_id = %d LIMIT %d OFFSET %d",
+            $reserva_id, $limit, $offset
+        ));
+
+        $total = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table WHERE reserva_id = %d",
+            $reserva_id
+        ));
+
+        ob_start();
+        foreach ($pasajeros as $i => $pasajero):
+            $num = $offset + $i + 1;
+        ?>
+            <tr>
+                <td><?php echo $num; ?></td>
+                <td><?php echo esc_html($pasajero->tipo_documento . ': ' . $pasajero->numero_documento); ?></td>
+                <td><strong><?php echo esc_html($pasajero->nombre_completo); ?></strong></td>
+                <td><?php echo $pasajero->fecha_nacimiento ? date_i18n('d/m/Y', strtotime($pasajero->fecha_nacimiento)) : '-'; ?></td>
+                <td><?php echo $pasajero->genero === 'M' ? __('Masculino', 'rtt-reservas') : __('Femenino', 'rtt-reservas'); ?></td>
+                <td><?php echo esc_html($pasajero->nacionalidad); ?></td>
+                <td><?php echo esc_html($pasajero->alergias ?: '-'); ?></td>
+            </tr>
+        <?php
+        endforeach;
+        $html = ob_get_clean();
+
+        wp_send_json_success([
+            'html' => $html,
+            'total' => intval($total),
+            'loaded' => $offset + count($pasajeros),
+            'has_more' => ($offset + count($pasajeros)) < $total
+        ]);
+    }
+
+    /**
      * Renderizar detalle de reserva
      */
     private function render_reserva_detail($reserva) {
@@ -499,8 +556,14 @@ class RTT_Admin_Reservas {
             </table>
         </div>
 
+        <?php
+        $total_pasajeros = count($reserva->pasajeros);
+        $initial_limit = 5;
+        $show_load_more = $total_pasajeros > $initial_limit;
+        $pasajeros_iniciales = $show_load_more ? array_slice($reserva->pasajeros, 0, $initial_limit) : $reserva->pasajeros;
+        ?>
         <div class="rtt-detail-section">
-            <h3><?php _e('Pasajeros', 'rtt-reservas'); ?> (<?php echo count($reserva->pasajeros); ?>)</h3>
+            <h3><?php _e('Pasajeros', 'rtt-reservas'); ?> (<span id="rtt-pasajeros-loaded"><?php echo count($pasajeros_iniciales); ?></span>/<?php echo $total_pasajeros; ?>)</h3>
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
@@ -513,8 +576,8 @@ class RTT_Admin_Reservas {
                         <th><?php _e('Observaciones', 'rtt-reservas'); ?></th>
                     </tr>
                 </thead>
-                <tbody>
-                    <?php foreach ($reserva->pasajeros as $i => $pasajero): ?>
+                <tbody id="rtt-pasajeros-tbody">
+                    <?php foreach ($pasajeros_iniciales as $i => $pasajero): ?>
                         <tr>
                             <td><?php echo $i + 1; ?></td>
                             <td><?php echo esc_html($pasajero->tipo_documento . ': ' . $pasajero->numero_documento); ?></td>
@@ -527,6 +590,16 @@ class RTT_Admin_Reservas {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            <?php if ($show_load_more): ?>
+            <div style="text-align: center; margin-top: 10px;">
+                <button type="button" class="button rtt-load-more-pasajeros"
+                        data-reserva-id="<?php echo $reserva->id; ?>"
+                        data-offset="<?php echo $initial_limit; ?>"
+                        data-total="<?php echo $total_pasajeros; ?>">
+                    <?php printf(__('Cargar más (%d restantes)', 'rtt-reservas'), $total_pasajeros - $initial_limit); ?>
+                </button>
+            </div>
+            <?php endif; ?>
         </div>
 
         <?php if ($reserva->notas): ?>
@@ -589,8 +662,15 @@ class RTT_Admin_Reservas {
             $values[] = $fecha_hasta . ' 23:59:59';
         }
 
-        $sql = "SELECT * FROM $table WHERE $where ORDER BY fecha_creacion DESC";
-        $reservas = empty($values) ? $wpdb->get_results($sql) : $wpdb->get_results($wpdb->prepare($sql, $values));
+        // Query optimizada con LEFT JOIN para obtener reservas y pasajeros en una sola consulta
+        $sql = "SELECT r.*, p.tipo_documento, p.numero_documento, p.nombre_completo,
+                       p.nacionalidad, p.fecha_nacimiento as pasajero_fecha_nac, p.genero, p.alergias
+                FROM $table r
+                LEFT JOIN $table_pasajeros p ON r.id = p.reserva_id
+                WHERE $where
+                ORDER BY r.fecha_creacion DESC, r.id, p.id";
+
+        $results = empty($values) ? $wpdb->get_results($sql) : $wpdb->get_results($wpdb->prepare($sql, $values));
 
         // Generar CSV
         $filename = 'reservas-' . date('Y-m-d-His') . '.csv';
@@ -626,54 +706,33 @@ class RTT_Admin_Reservas {
             'Pasajero - Observaciones'
         ], ';');
 
-        // Datos
-        foreach ($reservas as $reserva) {
-            // Obtener pasajeros
-            $pasajeros = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM $table_pasajeros WHERE reserva_id = %d",
-                $reserva->id
-            ));
+        // Procesar resultados agrupados
+        $current_reserva_id = null;
+        $is_first_row = true;
 
-            if (empty($pasajeros)) {
-                // Reserva sin pasajeros
-                fputcsv($output, [
-                    $reserva->codigo,
-                    $reserva->tour,
-                    date('d/m/Y', strtotime($reserva->fecha_tour)),
-                    $reserva->precio ?: '',
-                    $reserva->nombre_representante,
-                    $reserva->email,
-                    $reserva->telefono,
-                    $reserva->pais,
-                    $reserva->cantidad_pasajeros,
-                    ucfirst($reserva->estado),
-                    date('d/m/Y H:i', strtotime($reserva->fecha_creacion)),
-                    '', '', '', '', '', ''
-                ], ';');
-            } else {
-                // Una fila por pasajero
-                foreach ($pasajeros as $i => $pasajero) {
-                    fputcsv($output, [
-                        $i === 0 ? $reserva->codigo : '',
-                        $i === 0 ? $reserva->tour : '',
-                        $i === 0 ? date('d/m/Y', strtotime($reserva->fecha_tour)) : '',
-                        $i === 0 ? ($reserva->precio ?: '') : '',
-                        $i === 0 ? $reserva->nombre_representante : '',
-                        $i === 0 ? $reserva->email : '',
-                        $i === 0 ? $reserva->telefono : '',
-                        $i === 0 ? $reserva->pais : '',
-                        $i === 0 ? $reserva->cantidad_pasajeros : '',
-                        $i === 0 ? ucfirst($reserva->estado) : '',
-                        $i === 0 ? date('d/m/Y H:i', strtotime($reserva->fecha_creacion)) : '',
-                        $pasajero->tipo_documento . ': ' . $pasajero->numero_documento,
-                        $pasajero->nombre_completo,
-                        $pasajero->nacionalidad,
-                        $pasajero->fecha_nacimiento ? date('d/m/Y', strtotime($pasajero->fecha_nacimiento)) : '',
-                        $pasajero->genero === 'M' ? 'Masculino' : 'Femenino',
-                        $pasajero->alergias ?: ''
-                    ], ';');
-                }
-            }
+        foreach ($results as $row) {
+            $show_reserva_data = ($row->id !== $current_reserva_id);
+            $current_reserva_id = $row->id;
+
+            fputcsv($output, [
+                $show_reserva_data ? $row->codigo : '',
+                $show_reserva_data ? $row->tour : '',
+                $show_reserva_data ? date('d/m/Y', strtotime($row->fecha_tour)) : '',
+                $show_reserva_data ? ($row->precio ?: '') : '',
+                $show_reserva_data ? $row->nombre_representante : '',
+                $show_reserva_data ? $row->email : '',
+                $show_reserva_data ? $row->telefono : '',
+                $show_reserva_data ? $row->pais : '',
+                $show_reserva_data ? $row->cantidad_pasajeros : '',
+                $show_reserva_data ? ucfirst($row->estado) : '',
+                $show_reserva_data ? date('d/m/Y H:i', strtotime($row->fecha_creacion)) : '',
+                $row->tipo_documento ? ($row->tipo_documento . ': ' . $row->numero_documento) : '',
+                $row->nombre_completo ?: '',
+                $row->nacionalidad ?: '',
+                $row->pasajero_fecha_nac ? date('d/m/Y', strtotime($row->pasajero_fecha_nac)) : '',
+                $row->genero ? ($row->genero === 'M' ? 'Masculino' : 'Femenino') : '',
+                $row->alergias ?: ''
+            ], ';');
         }
 
         fclose($output);
