@@ -364,10 +364,13 @@
                 return;
             }
 
-            // Deshabilitar botón y mostrar loading
+            // Deshabilitar botón y mostrar loading overlay
             var $submitBtn = $form.find('.rtt-btn-submit');
             var originalText = $submitBtn.html();
             $submitBtn.prop('disabled', true).html('<span class="rtt-spinner"></span> ' + rttReservas.i18n.processing);
+
+            // Mostrar overlay de carga
+            showLoadingOverlay($form);
 
             // Enviar formulario via AJAX
             $.ajax({
@@ -375,27 +378,92 @@
                 type: 'POST',
                 data: $form.serialize(),
                 success: function(response) {
-                    if (response.success) {
-                        showMessage(response.data.message, 'success');
-                        $form.find('.rtt-step').hide();
+                    hideLoadingOverlay($form);
 
-                        // Cerrar modal después de éxito si existe
-                        setTimeout(function() {
-                            if (typeof window.rttCloseBookingModal === 'function') {
-                                window.rttCloseBookingModal();
-                            }
-                        }, 3000);
+                    if (response.success) {
+                        // Mostrar pantalla de éxito
+                        showSuccessScreen($form, response.data.codigo, response.data.message);
                     } else {
                         showMessage(response.data.message, 'error');
                         $submitBtn.prop('disabled', false).html(originalText);
                     }
                 },
                 error: function() {
+                    hideLoadingOverlay($form);
                     showMessage(rttReservas.i18n.error, 'error');
                     $submitBtn.prop('disabled', false).html(originalText);
                 }
             });
         });
+    }
+
+    /**
+     * Mostrar overlay de carga
+     */
+    function showLoadingOverlay($form) {
+        var loadingText = rttReservas.lang === 'en' ? 'Processing your booking' : 'Procesando tu reserva';
+        var loadingSubtext = rttReservas.lang === 'en' ? 'Please wait a moment...' : 'Por favor espera un momento...';
+
+        var $overlay = $('<div class="rtt-loading-overlay">' +
+            '<div class="rtt-loading-content">' +
+                '<div class="rtt-loading-spinner"></div>' +
+                '<div class="rtt-loading-text">' + loadingText + '<span class="rtt-loading-dots"><span></span><span></span><span></span></span></div>' +
+                '<div class="rtt-loading-subtext">' + loadingSubtext + '</div>' +
+            '</div>' +
+        '</div>');
+
+        $form.css('position', 'relative').append($overlay);
+    }
+
+    /**
+     * Ocultar overlay de carga
+     */
+    function hideLoadingOverlay($form) {
+        $form.find('.rtt-loading-overlay').fadeOut(300, function() {
+            $(this).remove();
+        });
+    }
+
+    /**
+     * Mostrar pantalla de éxito
+     */
+    function showSuccessScreen($form, codigo, message) {
+        var titleText = rttReservas.lang === 'en' ? 'Booking Sent Successfully!' : '¡Reserva Enviada Exitosamente!';
+        var messageText = rttReservas.lang === 'en'
+            ? 'We have received your booking. You will receive a confirmation email shortly.'
+            : 'Hemos recibido tu reserva. Recibirás un correo de confirmación en breve.';
+        var codeLabel = rttReservas.lang === 'en' ? 'Your booking code:' : 'Tu código de reserva:';
+
+        var $successScreen = $('<div class="rtt-success-screen">' +
+            '<div class="rtt-success-icon"></div>' +
+            '<h3 class="rtt-success-title">' + titleText + '</h3>' +
+            '<p class="rtt-success-message">' + messageText + '</p>' +
+            '<p style="margin-bottom: 10px; color: #6c757d;">' + codeLabel + '</p>' +
+            '<div class="rtt-success-code">' + codigo + '</div>' +
+        '</div>');
+
+        // Ocultar pasos y mostrar pantalla de éxito
+        $form.find('.rtt-step').hide();
+        $form.find('.rtt-step-actions').hide();
+        $form.append($successScreen);
+
+        // Scroll al inicio
+        var $container = $('.rtt-reservas-container');
+        if ($container.is(':visible')) {
+            var $modal = $container.closest('.rtt-modal-overlay');
+            if ($modal.length) {
+                $modal.animate({ scrollTop: 0 }, 300);
+            } else {
+                $('html, body').animate({ scrollTop: $container.offset().top - 50 }, 300);
+            }
+        }
+
+        // Cerrar modal después de éxito si existe
+        setTimeout(function() {
+            if (typeof window.rttCloseBookingModal === 'function') {
+                window.rttCloseBookingModal();
+            }
+        }, 5000);
     }
 
     /**
@@ -432,17 +500,46 @@
      * Inicializar validación en tiempo real
      */
     function initValidation($form) {
-        // Limpiar error al escribir
-        $form.on('input change', '.error', function() {
-            $(this).removeClass('error');
-            $(this).siblings('.rtt-field-error').remove();
+        // Limpiar error al escribir y marcar como válido
+        $form.on('input change', '.rtt-input, .rtt-select', function() {
+            var $field = $(this);
+            $field.removeClass('error');
+            $field.siblings('.rtt-field-error').remove();
+
+            // Marcar como válido si tiene contenido
+            var value = $field.val();
+            if (value && value.trim() !== '') {
+                // Validación especial para email
+                if ($field.attr('type') === 'email' || $field.attr('id') === 'rtt-email') {
+                    if (isValidEmail(value)) {
+                        $field.addClass('valid');
+                    } else {
+                        $field.removeClass('valid');
+                    }
+                } else {
+                    $field.addClass('valid');
+                }
+            } else {
+                $field.removeClass('valid');
+            }
         });
 
         // Validar email en blur
         $('#rtt-email').on('blur', function() {
-            var email = $(this).val();
+            var $field = $(this);
+            var email = $field.val();
             if (email && !isValidEmail(email)) {
-                showFieldError($(this), rttReservas.i18n.invalidEmail);
+                $field.removeClass('valid');
+                showFieldError($field, rttReservas.i18n.invalidEmail);
+            }
+        });
+
+        // Validar campos requeridos en blur
+        $form.on('blur', '.rtt-input[required], .rtt-select[required]', function() {
+            var $field = $(this);
+            var value = $field.val();
+            if (!value || value.trim() === '') {
+                $field.removeClass('valid');
             }
         });
     }
