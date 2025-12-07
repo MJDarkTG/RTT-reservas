@@ -27,26 +27,16 @@ define('RTT_RESERVAS_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
 /**
  * Actualizaciones automáticas desde GitHub
- * =====================================================
- * CONFIGURACIÓN: Cambia TU_USUARIO por tu usuario de GitHub
- * =====================================================
  */
-if (file_exists(RTT_RESERVAS_PLUGIN_DIR . 'plugin-update-checker/plugin-update-checker.php')) {
-    require_once RTT_RESERVAS_PLUGIN_DIR . 'plugin-update-checker/plugin-update-checker.php';
+if (file_exists(__DIR__ . '/plugin-update-checker/plugin-update-checker.php')) {
+    require_once __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
 
-    use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
-
-    $rtt_update_checker = PucFactory::buildUpdateChecker(
+    $rtt_update_checker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
         'https://github.com/MJDarkTG/RTT-reservas/',
         __FILE__,
         'rtt-reservas'
     );
-
-    // Usar releases de GitHub (tags como v1.0.1, v1.0.2, etc.)
     $rtt_update_checker->getVcsApi()->enableReleaseAssets();
-
-    // Opcional: Si tu repositorio es privado, descomenta y agrega tu token
-    // $rtt_update_checker->setAuthentication('tu_token_github');
 }
 
 /**
