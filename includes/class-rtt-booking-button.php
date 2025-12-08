@@ -25,6 +25,7 @@ class RTT_Booking_Button {
         $atts = shortcode_atts([
             'tour' => '',
             'tour_en' => '',
+            'tour_id' => '',     // ID del tour en CPT (para obtener datos automáticamente)
             'price' => '',
             'price_full' => '',  // Precio del paquete total (segundo precio)
             'price_note' => '',  // Nota del plan accesible (ej: "No incluye entradas")
@@ -39,16 +40,32 @@ class RTT_Booking_Button {
             'icon' => 'true',    // true, false
             'pulse' => 'false',  // true, false - efecto de atención
             'full' => 'false',   // true, false - ancho completo
-            'display' => 'button', // button, cards - modo de visualización
+            'display' => 'auto', // auto, button, card, cards, pills - modo de visualización
         ], $atts, 'rtt_booking_button');
 
-        // Si tiene dos precios y display especial, mostrar variante
-        if (!empty($atts['price']) && !empty($atts['price_full'])) {
-            if ($atts['display'] === 'cards') {
-                return $this->render_price_cards($atts);
-            } elseif ($atts['display'] === 'pills') {
-                return $this->render_price_pills($atts);
+        // Si se proporciona tour_id, obtener datos del CPT
+        if (!empty($atts['tour_id'])) {
+            $atts = $this->populate_from_tour_id($atts);
+        }
+
+        // Determinar display automático si es 'auto'
+        if ($atts['display'] === 'auto') {
+            if (!empty($atts['price']) && !empty($atts['price_full'])) {
+                $atts['display'] = 'cards'; // Dos precios = dos cards
+            } elseif (!empty($atts['price'])) {
+                $atts['display'] = 'card';  // Un precio = un card
+            } else {
+                $atts['display'] = 'button'; // Sin precio = botón simple
             }
+        }
+
+        // Renderizar según el tipo de display
+        if ($atts['display'] === 'cards' && !empty($atts['price']) && !empty($atts['price_full'])) {
+            return $this->render_price_cards($atts);
+        } elseif ($atts['display'] === 'pills' && !empty($atts['price']) && !empty($atts['price_full'])) {
+            return $this->render_price_pills($atts);
+        } elseif ($atts['display'] === 'card' && !empty($atts['price'])) {
+            return $this->render_single_card($atts);
         }
 
         // Detectar idioma
@@ -493,6 +510,119 @@ class RTT_Booking_Button {
                 </svg>
                 <span><?php echo esc_html($texts['book_now']); ?></span>
             </button>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Obtener datos del tour desde el CPT
+     */
+    private function populate_from_tour_id($atts) {
+        $tour_id = intval($atts['tour_id']);
+
+        if (!$tour_id) {
+            return $atts;
+        }
+
+        $post = get_post($tour_id);
+        if (!$post || $post->post_type !== 'rtt_tour') {
+            return $atts;
+        }
+
+        // Obtener idioma actual
+        $lang = $this->get_current_language();
+        if (!empty($atts['lang'])) {
+            $lang = $atts['lang'];
+        }
+
+        // Solo sobreescribir si no se proporcionó en el shortcode
+        if (empty($atts['tour'])) {
+            $atts['tour'] = $post->post_title;
+        }
+        if (empty($atts['tour_en'])) {
+            $atts['tour_en'] = get_post_meta($tour_id, '_rtt_tour_name_en', true) ?: $post->post_title;
+        }
+        if (empty($atts['price'])) {
+            $atts['price'] = get_post_meta($tour_id, '_rtt_tour_price', true);
+        }
+        if (empty($atts['price_full'])) {
+            $atts['price_full'] = get_post_meta($tour_id, '_rtt_tour_price_full', true);
+        }
+        if (empty($atts['price_note'])) {
+            $atts['price_note'] = get_post_meta($tour_id, '_rtt_tour_price_note', true);
+        }
+        if (empty($atts['price_note_en'])) {
+            $atts['price_note_en'] = get_post_meta($tour_id, '_rtt_tour_price_note_en', true);
+        }
+
+        return $atts;
+    }
+
+    /**
+     * Renderizar card único (un solo precio)
+     */
+    private function render_single_card($atts) {
+        $lang = $this->get_current_language();
+        if (!empty($atts['lang'])) {
+            $lang = $atts['lang'];
+        }
+
+        $tour_name = $lang === 'en' && !empty($atts['tour_en']) ? $atts['tour_en'] : $atts['tour'];
+        $price_note = $lang === 'en' && !empty($atts['price_note_en']) ? $atts['price_note_en'] : $atts['price_note'];
+
+        // Textos según idioma
+        $texts = [
+            'price' => $lang === 'en' ? 'Price' : 'Precio',
+            'per_person' => $lang === 'en' ? 'per person' : 'por persona',
+            'book_now' => $lang === 'en' ? 'Book Now' : 'Reservar Ahora',
+        ];
+
+        // Marcar que se usó el shortcode
+        $GLOBALS['rtt_booking_button_used'] = true;
+        $GLOBALS['rtt_booking_button_lang'] = $lang;
+
+        ob_start();
+        ?>
+        <div class="rtt-price-cards-wrapper rtt-single-card-wrapper">
+            <?php if (!empty($tour_name)): ?>
+            <h3 class="rtt-price-cards-title"><?php echo esc_html($tour_name); ?></h3>
+            <?php endif; ?>
+
+            <div class="rtt-price-cards-container rtt-single-card-container">
+                <!-- Card único -->
+                <div class="rtt-price-card rtt-price-card-single">
+                    <div class="rtt-price-card-header">
+                        <span class="rtt-price-card-label"><?php echo esc_html($texts['price']); ?></span>
+                    </div>
+                    <div class="rtt-price-card-body">
+                        <div class="rtt-price-card-amount">
+                            <span class="rtt-price-card-currency">$</span>
+                            <span class="rtt-price-card-value"><?php echo esc_html($atts['price']); ?></span>
+                            <span class="rtt-price-card-unit">USD</span>
+                        </div>
+                        <div class="rtt-price-card-per"><?php echo esc_html($texts['per_person']); ?></div>
+                        <?php if (!empty($price_note)): ?>
+                        <div class="rtt-price-card-note"><?php echo esc_html($price_note); ?></div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="rtt-price-card-footer">
+                        <button type="button"
+                                class="rtt-booking-btn rtt-booking-btn-primary rtt-price-card-btn"
+                                data-tour="<?php echo esc_attr($tour_name); ?>"
+                                data-lang="<?php echo esc_attr($lang); ?>"
+                                data-price="<?php echo esc_attr($atts['price']); ?>">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            <span><?php echo esc_html($texts['book_now']); ?></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
         <?php
         return ob_get_clean();

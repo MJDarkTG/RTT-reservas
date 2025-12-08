@@ -190,60 +190,63 @@ class RTT_Tours_CPT {
         <!-- Shortcode generado -->
         <div class="rtt-shortcode-section">
             <h4><?php _e('Shortcode del Tour', 'rtt-reservas'); ?></h4>
-            <p class="description"><?php _e('Copia este shortcode para usar en tus páginas:', 'rtt-reservas'); ?></p>
+            <p class="description"><?php _e('Usa este shortcode genérico - los precios se actualizan automáticamente:', 'rtt-reservas'); ?></p>
 
             <div class="rtt-shortcode-box">
-                <?php
-                // Si tiene dos precios, mostrar cards por defecto
-                $default_display = $price_full ? 'cards' : 'button';
-                ?>
-                <code id="rtt-generated-shortcode"><?php echo esc_html($this->generate_shortcode($post, 'normal', 'es', $default_display)); ?></code>
+                <code id="rtt-generated-shortcode">[rtt_booking_button tour_id="<?php echo $post->ID; ?>"]</code>
                 <button type="button" class="button rtt-copy-shortcode" onclick="rttCopyShortcode()">
                     <span class="dashicons dashicons-clipboard"></span> <?php _e('Copiar', 'rtt-reservas'); ?>
                 </button>
             </div>
 
+            <div class="rtt-shortcode-info" style="background: #e8f5e9; padding: 12px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #27AE60;">
+                <strong style="color: #27AE60;"><?php _e('Ventaja:', 'rtt-reservas'); ?></strong>
+                <?php _e('Los precios se cargan desde esta configuración. Cuando actualices el precio aquí, se reflejará automáticamente en todos los tours donde uses este shortcode.', 'rtt-reservas'); ?>
+            </div>
+
             <div class="rtt-shortcode-variants">
                 <p><strong><?php _e('Variantes:', 'rtt-reservas'); ?></strong></p>
-                <?php if ($price_full): ?>
+
                 <div class="rtt-variant rtt-variant-highlight">
-                    <label><?php _e('Cards inglés:', 'rtt-reservas'); ?></label>
-                    <code id="rtt-shortcode-cards-en"><?php echo esc_html($this->generate_shortcode($post, 'normal', 'en', 'cards')); ?></code>
-                    <button type="button" class="button button-small rtt-copy-variant" onclick="rttCopyVariant('rtt-shortcode-cards-en', this)">
-                        <span class="dashicons dashicons-clipboard"></span>
-                    </button>
-                </div>
-                <?php endif; ?>
-                <div class="rtt-variant">
-                    <label><?php _e('Botón simple:', 'rtt-reservas'); ?></label>
-                    <code id="rtt-shortcode-button"><?php echo esc_html($this->generate_shortcode($post, 'normal', 'es', 'button')); ?></code>
-                    <button type="button" class="button button-small rtt-copy-variant" onclick="rttCopyVariant('rtt-shortcode-button', this)">
-                        <span class="dashicons dashicons-clipboard"></span>
-                    </button>
-                </div>
-                <div class="rtt-variant">
-                    <label><?php _e('Botón inglés:', 'rtt-reservas'); ?></label>
-                    <code id="rtt-shortcode-en"><?php echo esc_html($this->generate_shortcode($post, 'normal', 'en', 'button')); ?></code>
+                    <label><?php _e('Inglés:', 'rtt-reservas'); ?></label>
+                    <code id="rtt-shortcode-en">[rtt_booking_button tour_id="<?php echo $post->ID; ?>" lang="en"]</code>
                     <button type="button" class="button button-small rtt-copy-variant" onclick="rttCopyVariant('rtt-shortcode-en', this)">
                         <span class="dashicons dashicons-clipboard"></span>
                     </button>
                 </div>
+
+                <div class="rtt-variant">
+                    <label><?php _e('Solo botón:', 'rtt-reservas'); ?></label>
+                    <code id="rtt-shortcode-button">[rtt_booking_button tour_id="<?php echo $post->ID; ?>" display="button"]</code>
+                    <button type="button" class="button button-small rtt-copy-variant" onclick="rttCopyVariant('rtt-shortcode-button', this)">
+                        <span class="dashicons dashicons-clipboard"></span>
+                    </button>
+                </div>
+
                 <?php if ($price_full): ?>
                 <div class="rtt-variant">
-                    <label><?php _e('Pills compactos:', 'rtt-reservas'); ?></label>
-                    <code id="rtt-shortcode-pills"><?php echo esc_html($this->generate_shortcode($post, 'normal', 'es', 'pills')); ?></code>
+                    <label><?php _e('Pills:', 'rtt-reservas'); ?></label>
+                    <code id="rtt-shortcode-pills">[rtt_booking_button tour_id="<?php echo $post->ID; ?>" display="pills"]</code>
                     <button type="button" class="button button-small rtt-copy-variant" onclick="rttCopyVariant('rtt-shortcode-pills', this)">
                         <span class="dashicons dashicons-clipboard"></span>
                     </button>
                 </div>
-                <div class="rtt-variant">
-                    <label><?php _e('Pills inglés:', 'rtt-reservas'); ?></label>
-                    <code id="rtt-shortcode-pills-en"><?php echo esc_html($this->generate_shortcode($post, 'normal', 'en', 'pills')); ?></code>
-                    <button type="button" class="button button-small rtt-copy-variant" onclick="rttCopyVariant('rtt-shortcode-pills-en', this)">
-                        <span class="dashicons dashicons-clipboard"></span>
-                    </button>
-                </div>
                 <?php endif; ?>
+
+                <details style="margin-top: 15px;">
+                    <summary style="cursor: pointer; color: #666; font-size: 12px;">
+                        <?php _e('Ver shortcode con precios hardcodeados (avanzado)', 'rtt-reservas'); ?>
+                    </summary>
+                    <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                        <div class="rtt-variant">
+                            <label><?php _e('Completo:', 'rtt-reservas'); ?></label>
+                            <code id="rtt-shortcode-full" style="font-size: 10px;"><?php echo esc_html($this->generate_shortcode($post, 'normal', 'es', 'auto')); ?></code>
+                            <button type="button" class="button button-small rtt-copy-variant" onclick="rttCopyVariant('rtt-shortcode-full', this)">
+                                <span class="dashicons dashicons-clipboard"></span>
+                            </button>
+                        </div>
+                    </div>
+                </details>
             </div>
         </div>
 
@@ -497,7 +500,7 @@ class RTT_Tours_CPT {
             $shortcode .= ' size="' . esc_attr($size) . '"';
         }
 
-        if ($display === 'cards' || $display === 'pills') {
+        if ($display !== 'button' && $display !== 'auto') {
             $shortcode .= ' display="' . esc_attr($display) . '"';
         }
 
