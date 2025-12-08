@@ -132,6 +132,9 @@ final class RTT_Reservas {
         add_action('wp_ajax_rtt_submit_reserva', [$ajax, 'submit_reserva']);
         add_action('wp_ajax_nopriv_rtt_submit_reserva', [$ajax, 'submit_reserva']);
         add_action('wp_ajax_rtt_get_tours', [$ajax, 'get_tours']);
+
+        // Cron para envío de emails en segundo plano
+        add_action('rtt_send_reservation_email', ['RTT_Ajax', 'send_reservation_email_cron']);
         add_action('wp_ajax_nopriv_rtt_get_tours', [$ajax, 'get_tours']);
     }
 

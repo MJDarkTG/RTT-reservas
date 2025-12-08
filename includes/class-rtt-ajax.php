@@ -82,28 +82,12 @@ class RTT_Ajax {
 
         // Agregar código de reserva a los datos para el PDF
         $data['codigo'] = $reserva_result['codigo'];
+        $data['reserva_id'] = $reserva_result['id'];
 
-        // Generar PDF
-        $pdf_generator = new RTT_PDF();
-        $pdf_content = $pdf_generator->generate($data);
+        // Programar envío de email en segundo plano (más rápido para el usuario)
+        $this->schedule_email_send($data);
 
-        if (is_wp_error($pdf_content)) {
-            wp_send_json_error([
-                'message' => $pdf_content->get_error_message()
-            ]);
-        }
-
-        // Enviar email
-        $mailer = new RTT_Mail();
-        $email_sent = $mailer->send_confirmation($data, $pdf_content);
-
-        if (is_wp_error($email_sent)) {
-            // Aunque falle el email, la reserva ya está guardada
-            // Actualizamos el estado para indicar que necesita revisión
-            RTT_Database::update_notas($reserva_result['id'], 'Error al enviar email de confirmación');
-        }
-
-        // Respuesta exitosa
+        // Respuesta exitosa (inmediata, sin esperar el email)
         $lang = sanitize_text_field($_POST['lang'] ?? 'es');
         $success_message = $lang === 'en'
             ? 'Booking sent successfully! Your reservation code is: ' . $reserva_result['codigo']
@@ -284,6 +268,54 @@ class RTT_Ajax {
         ];
 
         update_option($log_key, $attempts, false);
+    }
+
+    /**
+     * Programar envío de email en segundo plano
+     */
+    private function schedule_email_send($data) {
+        // Guardar datos temporalmente para el cron
+        $transient_key = 'rtt_email_' . $data['reserva_id'];
+        set_transient($transient_key, $data, HOUR_IN_SECONDS);
+
+        // Programar envío inmediato en segundo plano
+        wp_schedule_single_event(time(), 'rtt_send_reservation_email', [$data['reserva_id']]);
+
+        // Forzar ejecución del cron si es posible
+        spawn_cron();
+    }
+
+    /**
+     * Enviar email de reserva (llamado por cron)
+     */
+    public static function send_reservation_email_cron($reserva_id) {
+        $transient_key = 'rtt_email_' . $reserva_id;
+        $data = get_transient($transient_key);
+
+        if (!$data) {
+            return; // Datos expirados o ya procesados
+        }
+
+        // Generar PDF
+        $pdf_generator = new RTT_PDF();
+        $pdf_content = $pdf_generator->generate($data);
+
+        if (is_wp_error($pdf_content)) {
+            RTT_Database::update_notas($reserva_id, 'Error al generar PDF: ' . $pdf_content->get_error_message());
+            delete_transient($transient_key);
+            return;
+        }
+
+        // Enviar email
+        $mailer = new RTT_Mail();
+        $email_sent = $mailer->send_confirmation($data, $pdf_content);
+
+        if (is_wp_error($email_sent)) {
+            RTT_Database::update_notas($reserva_id, 'Error al enviar email de confirmación');
+        }
+
+        // Limpiar transient
+        delete_transient($transient_key);
     }
 
     /**
