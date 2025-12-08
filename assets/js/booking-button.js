@@ -65,6 +65,9 @@
             // Configurar selector de plan si hay dos precios
             setupPlanSelector(price, priceFull, lang, priceNote, preSelectedPlan);
 
+            // Actualizar idioma del formulario
+            updateFormLanguage($modal, lang);
+
             // Abrir modal
             openModal($modal);
         });
@@ -145,9 +148,23 @@
             // Configurar selector de plan con el plan pre-seleccionado
             setupPlanSelector(price, priceFull, lang, priceNote, selectedPlan);
 
+            // Actualizar idioma del formulario
+            updateFormLanguage($modal, lang);
+
             // Abrir modal
             openModal($modal);
         });
+    }
+
+    /**
+     * Actualizar idioma del formulario cuando se abre el modal
+     */
+    function updateFormLanguage($modal, lang) {
+        // Actualizar campo hidden del idioma
+        $modal.find('input[name="lang"]').val(lang);
+
+        // Actualizar data-lang del contenedor
+        $modal.find('.rtt-reservas-container').attr('data-lang', lang);
     }
 
     /**
