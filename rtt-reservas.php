@@ -3,7 +3,7 @@
  * Plugin Name: RTT Reservas
  * Plugin URI: https://readytotravelperu.com
  * Description: Tour booking system with wizard form, PDF generation and email notifications.
- * Version: 1.3.0
+ * Version: 1.4.0
  * Author: Ready To Travel Peru
  * Author URI: https://readytotravelperu.com
  * Text Domain: rtt-reservas
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Definir constantes del plugin
-define('RTT_RESERVAS_VERSION', '1.3.0');
+define('RTT_RESERVAS_VERSION', '1.4.0');
 define('RTT_RESERVAS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RTT_RESERVAS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('RTT_RESERVAS_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -132,10 +132,20 @@ final class RTT_Reservas {
         add_action('wp_ajax_rtt_submit_reserva', [$ajax, 'submit_reserva']);
         add_action('wp_ajax_nopriv_rtt_submit_reserva', [$ajax, 'submit_reserva']);
         add_action('wp_ajax_rtt_get_tours', [$ajax, 'get_tours']);
+        add_action('wp_ajax_nopriv_rtt_get_tours', [$ajax, 'get_tours']);
+
+        // Tracking de formulario (público, sin nonce para máxima captura)
+        add_action('wp_ajax_rtt_track_form', [$ajax, 'track_form_event']);
+        add_action('wp_ajax_nopriv_rtt_track_form', [$ajax, 'track_form_event']);
 
         // Cron para envío de emails en segundo plano
         add_action('rtt_send_reservation_email', ['RTT_Ajax', 'send_reservation_email_cron']);
-        add_action('wp_ajax_nopriv_rtt_get_tours', [$ajax, 'get_tours']);
+
+        // Cron para limpieza de tracking antiguo (diario)
+        if (!wp_next_scheduled('rtt_cleanup_tracking')) {
+            wp_schedule_event(time(), 'daily', 'rtt_cleanup_tracking');
+        }
+        add_action('rtt_cleanup_tracking', ['RTT_Database', 'cleanup_old_tracking']);
     }
 
     /**

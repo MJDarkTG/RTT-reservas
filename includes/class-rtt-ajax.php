@@ -264,7 +264,8 @@ class RTT_Ajax {
             'ip' => $ip,
             'reason' => $reason,
             'time' => current_time('mysql'),
-            'user_agent' => substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 200)
+            'user_agent' => substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 200),
+            'page_url' => sanitize_url($_SERVER['HTTP_REFERER'] ?? ''),
         ];
 
         update_option($log_key, $attempts, false);
@@ -352,5 +353,39 @@ class RTT_Ajax {
         $tours = RTT_Tours::get_tours_grouped($lang);
 
         wp_send_json_success($tours);
+    }
+
+    /**
+     * Registrar evento de tracking del formulario
+     */
+    public function track_form_event() {
+        // No verificar nonce para tracking (no es crítico y mejora la captura)
+        // Pero sí aplicar rate limiting básico
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $session_id = sanitize_text_field($_POST['session_id'] ?? '');
+
+        if (empty($session_id)) {
+            wp_send_json_error(['message' => 'Session ID required']);
+            return;
+        }
+
+        $data = [
+            'session_id' => $session_id,
+            'ip' => $ip,
+            'page_url' => sanitize_url($_POST['page_url'] ?? ''),
+            'page_title' => sanitize_text_field($_POST['page_title'] ?? ''),
+            'step' => intval($_POST['step'] ?? 1),
+            'event_type' => sanitize_text_field($_POST['event_type'] ?? 'view'),
+            'tour_selected' => sanitize_text_field($_POST['tour_selected'] ?? ''),
+            'fecha_selected' => sanitize_text_field($_POST['fecha_selected'] ?? ''),
+            'pasajeros_count' => intval($_POST['pasajeros_count'] ?? 0),
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
+            'referrer' => $_SERVER['HTTP_REFERER'] ?? '',
+            'lang' => sanitize_text_field($_POST['lang'] ?? 'es'),
+        ];
+
+        RTT_Database::insert_tracking($data);
+
+        wp_send_json_success();
     }
 }

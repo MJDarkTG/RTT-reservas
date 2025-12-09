@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 
 class RTT_Database {
 
-    const DB_VERSION = '1.3';
+    const DB_VERSION = '1.4';
 
     /**
      * Crear tablas en la base de datos
@@ -61,9 +61,35 @@ class RTT_Database {
             KEY reserva_id (reserva_id)
         ) $charset_collate;";
 
+        // Tabla de tracking de formulario
+        $table_tracking = $wpdb->prefix . 'rtt_form_tracking';
+        $sql_tracking = "CREATE TABLE $table_tracking (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            session_id varchar(64) NOT NULL,
+            ip varchar(45) NOT NULL,
+            page_url varchar(500) NOT NULL,
+            page_title varchar(255) DEFAULT NULL,
+            step int(11) NOT NULL DEFAULT 1,
+            event_type varchar(20) NOT NULL DEFAULT 'view',
+            tour_selected varchar(255) DEFAULT NULL,
+            fecha_selected date DEFAULT NULL,
+            pasajeros_count int(11) DEFAULT NULL,
+            user_agent varchar(500) DEFAULT NULL,
+            referrer varchar(500) DEFAULT NULL,
+            lang varchar(5) DEFAULT 'es',
+            created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY session_id (session_id),
+            KEY event_type (event_type),
+            KEY step (step),
+            KEY created_at (created_at),
+            KEY page_url (page_url(100))
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_reservas);
         dbDelta($sql_pasajeros);
+        dbDelta($sql_tracking);
 
         // Agregar índice de tour si no existe (para instalaciones existentes)
         self::maybe_add_tour_index();
@@ -404,5 +430,147 @@ class RTT_Database {
     public static function invalidate_all_cache() {
         self::invalidate_tours_cache();
         self::invalidate_stats_cache();
+    }
+
+    /**
+     * Insertar evento de tracking del formulario
+     */
+    public static function insert_tracking($data) {
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'rtt_form_tracking';
+
+        $result = $wpdb->insert($table, [
+            'session_id' => sanitize_text_field($data['session_id'] ?? ''),
+            'ip' => sanitize_text_field($data['ip'] ?? ''),
+            'page_url' => sanitize_url($data['page_url'] ?? ''),
+            'page_title' => sanitize_text_field($data['page_title'] ?? ''),
+            'step' => intval($data['step'] ?? 1),
+            'event_type' => sanitize_text_field($data['event_type'] ?? 'view'),
+            'tour_selected' => sanitize_text_field($data['tour_selected'] ?? ''),
+            'fecha_selected' => !empty($data['fecha_selected']) ? sanitize_text_field($data['fecha_selected']) : null,
+            'pasajeros_count' => !empty($data['pasajeros_count']) ? intval($data['pasajeros_count']) : null,
+            'user_agent' => sanitize_text_field(substr($data['user_agent'] ?? '', 0, 500)),
+            'referrer' => sanitize_url($data['referrer'] ?? ''),
+            'lang' => sanitize_text_field($data['lang'] ?? 'es'),
+        ], ['%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s']);
+
+        return $result !== false;
+    }
+
+    /**
+     * Obtener estadísticas de tracking
+     */
+    public static function get_tracking_stats($days = 30) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_form_tracking';
+
+        $date_filter = $days > 0 ? $wpdb->prepare("AND created_at >= DATE_SUB(NOW(), INTERVAL %d DAY)", $days) : "";
+
+        // Estadísticas por paso (funnel)
+        $funnel = $wpdb->get_results("
+            SELECT
+                step,
+                COUNT(DISTINCT session_id) as sessions,
+                COUNT(*) as events
+            FROM {$table}
+            WHERE event_type IN ('step_view', 'form_open') {$date_filter}
+            GROUP BY step
+            ORDER BY step ASC
+        ", ARRAY_A);
+
+        // Abandonos por paso
+        $abandons = $wpdb->get_results("
+            SELECT
+                step as last_step,
+                COUNT(DISTINCT session_id) as abandoned_sessions
+            FROM {$table} t1
+            WHERE event_type IN ('step_view', 'form_open') {$date_filter}
+            AND NOT EXISTS (
+                SELECT 1 FROM {$table} t2
+                WHERE t2.session_id = t1.session_id
+                AND t2.event_type = 'form_submit'
+            )
+            AND step = (
+                SELECT MAX(step) FROM {$table} t3
+                WHERE t3.session_id = t1.session_id
+            )
+            GROUP BY step
+            ORDER BY step ASC
+        ", ARRAY_A);
+
+        // Top páginas donde se abre el formulario
+        $top_pages = $wpdb->get_results("
+            SELECT
+                page_url,
+                page_title,
+                COUNT(DISTINCT session_id) as sessions,
+                COUNT(*) as opens
+            FROM {$table}
+            WHERE event_type = 'form_open' {$date_filter}
+            GROUP BY page_url, page_title
+            ORDER BY sessions DESC
+            LIMIT 10
+        ", ARRAY_A);
+
+        // Sesiones recientes que no completaron
+        $recent_abandoned = $wpdb->get_results("
+            SELECT
+                t1.session_id,
+                t1.ip,
+                t1.page_url,
+                t1.page_title,
+                MAX(t1.step) as last_step,
+                MAX(t1.tour_selected) as tour,
+                MAX(t1.pasajeros_count) as pasajeros,
+                MIN(t1.created_at) as started_at,
+                MAX(t1.created_at) as last_activity,
+                t1.user_agent
+            FROM {$table} t1
+            WHERE t1.event_type IN ('step_view', 'form_open') {$date_filter}
+            AND NOT EXISTS (
+                SELECT 1 FROM {$table} t2
+                WHERE t2.session_id = t1.session_id
+                AND t2.event_type = 'form_submit'
+            )
+            GROUP BY t1.session_id, t1.ip, t1.page_url, t1.page_title, t1.user_agent
+            ORDER BY last_activity DESC
+            LIMIT 50
+        ", ARRAY_A);
+
+        // Tasa de conversión
+        $total_starts = $wpdb->get_var("
+            SELECT COUNT(DISTINCT session_id)
+            FROM {$table}
+            WHERE event_type = 'form_open' {$date_filter}
+        ");
+
+        $total_submits = $wpdb->get_var("
+            SELECT COUNT(DISTINCT session_id)
+            FROM {$table}
+            WHERE event_type = 'form_submit' {$date_filter}
+        ");
+
+        return [
+            'funnel' => $funnel ?: [],
+            'abandons' => $abandons ?: [],
+            'top_pages' => $top_pages ?: [],
+            'recent_abandoned' => $recent_abandoned ?: [],
+            'conversion' => [
+                'starts' => (int)$total_starts,
+                'submits' => (int)$total_submits,
+                'rate' => $total_starts > 0 ? round(($total_submits / $total_starts) * 100, 1) : 0
+            ]
+        ];
+    }
+
+    /**
+     * Limpiar tracking antiguo (más de 90 días)
+     */
+    public static function cleanup_old_tracking() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_form_tracking';
+
+        $wpdb->query("DELETE FROM {$table} WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY)");
     }
 }

@@ -31,6 +31,15 @@ class RTT_Admin_Stats {
 
         add_submenu_page(
             'rtt-reservas',
+            __('Tracking del Formulario', 'rtt-reservas'),
+            __('Tracking', 'rtt-reservas'),
+            'manage_options',
+            'rtt-form-tracking',
+            [$this, 'render_tracking_page']
+        );
+
+        add_submenu_page(
+            'rtt-reservas',
             __('Log de Seguridad', 'rtt-reservas'),
             __('Log de Seguridad', 'rtt-reservas'),
             'manage_options',
@@ -896,12 +905,13 @@ class RTT_Admin_Stats {
                             <th style="width: 130px;"><?php _e('IP', 'rtt-reservas'); ?></th>
                             <th style="width: 130px;"><?php _e('Razón', 'rtt-reservas'); ?></th>
                             <th><?php _e('User Agent', 'rtt-reservas'); ?></th>
+                            <th style="width: 200px;"><?php _e('Página', 'rtt-reservas'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($attempts)): ?>
                             <tr>
-                                <td colspan="4" style="text-align: center; padding: 40px; color: #666;">
+                                <td colspan="5" style="text-align: center; padding: 40px; color: #666;">
                                     <span class="dashicons dashicons-yes-alt" style="font-size: 40px; color: #2db742; display: block; margin-bottom: 10px;"></span>
                                     <?php _e('No hay intentos fallidos registrados. ¡Todo está bien!', 'rtt-reservas'); ?>
                                 </td>
@@ -929,6 +939,15 @@ class RTT_Admin_Stats {
                                         <small style="color: #666; word-break: break-all;">
                                             <?php echo esc_html($attempt['user_agent'] ?? '-'); ?>
                                         </small>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($attempt['page_url'])): ?>
+                                            <a href="<?php echo esc_url($attempt['page_url']); ?>" target="_blank" style="color: #3b82f6; word-break: break-all;">
+                                                <?php echo esc_html(wp_parse_url($attempt['page_url'], PHP_URL_PATH) ?: $attempt['page_url']); ?>
+                                            </a>
+                                        <?php else: ?>
+                                            <span style="color: #999;">-</span>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -1103,6 +1122,428 @@ class RTT_Admin_Stats {
             });
         });
         </script>
+        <?php
+    }
+
+    /**
+     * Renderizar página de tracking del formulario
+     */
+    public function render_tracking_page() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        $days = isset($_GET['days']) ? absint($_GET['days']) : 30;
+        $stats = RTT_Database::get_tracking_stats($days);
+
+        $step_names = [
+            1 => __('Tour y Fecha', 'rtt-reservas'),
+            2 => __('Pasajeros', 'rtt-reservas'),
+            3 => __('Representante', 'rtt-reservas'),
+        ];
+        ?>
+        <div class="wrap rtt-tracking-wrap">
+            <h1 class="rtt-tracking-title">
+                <span class="dashicons dashicons-visibility"></span>
+                <?php _e('Tracking del Formulario', 'rtt-reservas'); ?>
+            </h1>
+
+            <p style="color: #64748b; margin-bottom: 20px;">
+                <?php _e('Monitorea el comportamiento de los usuarios en el formulario de reservas. Ve en qué páginas abren el formulario y en qué paso abandonan.', 'rtt-reservas'); ?>
+            </p>
+
+            <!-- Filtro de período -->
+            <div class="rtt-tracking-filters">
+                <label><?php _e('Período:', 'rtt-reservas'); ?></label>
+                <select id="rtt-tracking-period" onchange="window.location.href='?page=rtt-form-tracking&days='+this.value">
+                    <option value="7" <?php selected($days, 7); ?>><?php _e('Últimos 7 días', 'rtt-reservas'); ?></option>
+                    <option value="30" <?php selected($days, 30); ?>><?php _e('Últimos 30 días', 'rtt-reservas'); ?></option>
+                    <option value="90" <?php selected($days, 90); ?>><?php _e('Últimos 90 días', 'rtt-reservas'); ?></option>
+                </select>
+            </div>
+
+            <!-- Tarjetas de conversión -->
+            <div class="rtt-tracking-cards">
+                <div class="rtt-tracking-card rtt-card-starts">
+                    <div class="rtt-card-icon"><span class="dashicons dashicons-visibility"></span></div>
+                    <div class="rtt-card-info">
+                        <h3><?php echo $stats['conversion']['starts']; ?></h3>
+                        <p><?php _e('Formularios Abiertos', 'rtt-reservas'); ?></p>
+                    </div>
+                </div>
+
+                <div class="rtt-tracking-card rtt-card-submits">
+                    <div class="rtt-card-icon"><span class="dashicons dashicons-yes-alt"></span></div>
+                    <div class="rtt-card-info">
+                        <h3><?php echo $stats['conversion']['submits']; ?></h3>
+                        <p><?php _e('Reservas Enviadas', 'rtt-reservas'); ?></p>
+                    </div>
+                </div>
+
+                <div class="rtt-tracking-card rtt-card-rate">
+                    <div class="rtt-card-icon"><span class="dashicons dashicons-chart-line"></span></div>
+                    <div class="rtt-card-info">
+                        <h3><?php echo $stats['conversion']['rate']; ?>%</h3>
+                        <p><?php _e('Tasa de Conversión', 'rtt-reservas'); ?></p>
+                    </div>
+                </div>
+
+                <div class="rtt-tracking-card rtt-card-abandoned">
+                    <div class="rtt-card-icon"><span class="dashicons dashicons-dismiss"></span></div>
+                    <div class="rtt-card-info">
+                        <h3><?php echo max(0, $stats['conversion']['starts'] - $stats['conversion']['submits']); ?></h3>
+                        <p><?php _e('Abandonados', 'rtt-reservas'); ?></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Funnel de conversión -->
+            <div class="rtt-tracking-section">
+                <h2><span class="dashicons dashicons-filter"></span> <?php _e('Embudo de Conversión', 'rtt-reservas'); ?></h2>
+                <div class="rtt-funnel">
+                    <?php
+                    $max_sessions = 0;
+                    foreach ($stats['funnel'] as $step) {
+                        if ($step['sessions'] > $max_sessions) {
+                            $max_sessions = $step['sessions'];
+                        }
+                    }
+
+                    foreach ($stats['funnel'] as $step):
+                        $percent = $max_sessions > 0 ? round(($step['sessions'] / $max_sessions) * 100) : 0;
+                        $step_name = $step_names[$step['step']] ?? __('Paso', 'rtt-reservas') . ' ' . $step['step'];
+                        $abandon_count = 0;
+                        foreach ($stats['abandons'] as $ab) {
+                            if ($ab['last_step'] == $step['step']) {
+                                $abandon_count = $ab['abandoned_sessions'];
+                                break;
+                            }
+                        }
+                    ?>
+                        <div class="rtt-funnel-step">
+                            <div class="rtt-funnel-label">
+                                <strong><?php _e('Paso', 'rtt-reservas'); ?> <?php echo $step['step']; ?>:</strong>
+                                <?php echo esc_html($step_name); ?>
+                            </div>
+                            <div class="rtt-funnel-bar-container">
+                                <div class="rtt-funnel-bar" style="width: <?php echo $percent; ?>%;">
+                                    <span><?php echo $step['sessions']; ?> <?php _e('sesiones', 'rtt-reservas'); ?></span>
+                                </div>
+                            </div>
+                            <?php if ($abandon_count > 0): ?>
+                                <div class="rtt-funnel-abandon">
+                                    <span class="dashicons dashicons-arrow-right-alt"></span>
+                                    <?php echo $abandon_count; ?> <?php _e('abandonaron aquí', 'rtt-reservas'); ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+
+                    <?php if (empty($stats['funnel'])): ?>
+                        <p style="text-align: center; color: #64748b; padding: 40px;">
+                            <?php _e('No hay datos de tracking disponibles aún.', 'rtt-reservas'); ?>
+                        </p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Top páginas -->
+            <div class="rtt-tracking-section">
+                <h2><span class="dashicons dashicons-admin-links"></span> <?php _e('Top Páginas (donde abren el formulario)', 'rtt-reservas'); ?></h2>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th><?php _e('Página', 'rtt-reservas'); ?></th>
+                            <th style="width: 100px;"><?php _e('Sesiones', 'rtt-reservas'); ?></th>
+                            <th style="width: 100px;"><?php _e('Aperturas', 'rtt-reservas'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($stats['top_pages'])): ?>
+                            <tr>
+                                <td colspan="3" style="text-align: center; padding: 30px; color: #64748b;">
+                                    <?php _e('No hay datos disponibles.', 'rtt-reservas'); ?>
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($stats['top_pages'] as $page): ?>
+                                <tr>
+                                    <td>
+                                        <a href="<?php echo esc_url($page['page_url']); ?>" target="_blank" style="color: #3b82f6;">
+                                            <?php echo esc_html($page['page_title'] ?: wp_parse_url($page['page_url'], PHP_URL_PATH)); ?>
+                                        </a>
+                                        <br>
+                                        <small style="color: #94a3b8;"><?php echo esc_html(wp_parse_url($page['page_url'], PHP_URL_PATH)); ?></small>
+                                    </td>
+                                    <td><strong><?php echo $page['sessions']; ?></strong></td>
+                                    <td><?php echo $page['opens']; ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Sesiones abandonadas recientes -->
+            <div class="rtt-tracking-section">
+                <h2><span class="dashicons dashicons-warning"></span> <?php _e('Sesiones Abandonadas Recientes', 'rtt-reservas'); ?></h2>
+                <p style="color: #64748b; margin-bottom: 15px;">
+                    <?php _e('Usuarios que abrieron el formulario pero no completaron la reserva.', 'rtt-reservas'); ?>
+                </p>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 150px;"><?php _e('Última actividad', 'rtt-reservas'); ?></th>
+                            <th style="width: 120px;"><?php _e('IP', 'rtt-reservas'); ?></th>
+                            <th><?php _e('Página', 'rtt-reservas'); ?></th>
+                            <th style="width: 120px;"><?php _e('Último paso', 'rtt-reservas'); ?></th>
+                            <th style="width: 150px;"><?php _e('Tour seleccionado', 'rtt-reservas'); ?></th>
+                            <th style="width: 80px;"><?php _e('Pasajeros', 'rtt-reservas'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($stats['recent_abandoned'])): ?>
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 30px; color: #64748b;">
+                                    <span class="dashicons dashicons-yes-alt" style="font-size: 32px; color: #2db742; display: block; margin-bottom: 10px;"></span>
+                                    <?php _e('¡Excelente! No hay sesiones abandonadas recientemente.', 'rtt-reservas'); ?>
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($stats['recent_abandoned'] as $session): ?>
+                                <tr>
+                                    <td>
+                                        <strong><?php echo esc_html(date('d/m H:i', strtotime($session['last_activity']))); ?></strong>
+                                        <br>
+                                        <small style="color: #94a3b8;">
+                                            <?php
+                                            $diff = time() - strtotime($session['last_activity']);
+                                            if ($diff < 3600) {
+                                                echo sprintf(__('hace %d min', 'rtt-reservas'), round($diff / 60));
+                                            } elseif ($diff < 86400) {
+                                                echo sprintf(__('hace %d horas', 'rtt-reservas'), round($diff / 3600));
+                                            } else {
+                                                echo sprintf(__('hace %d días', 'rtt-reservas'), round($diff / 86400));
+                                            }
+                                            ?>
+                                        </small>
+                                    </td>
+                                    <td><code style="font-size: 11px;"><?php echo esc_html($session['ip']); ?></code></td>
+                                    <td>
+                                        <a href="<?php echo esc_url($session['page_url']); ?>" target="_blank" style="color: #3b82f6;">
+                                            <?php echo esc_html($session['page_title'] ?: wp_parse_url($session['page_url'], PHP_URL_PATH)); ?>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="rtt-step-badge rtt-step-<?php echo $session['last_step']; ?>">
+                                            <?php echo esc_html($step_names[$session['last_step']] ?? 'Paso ' . $session['last_step']); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php if ($session['tour']): ?>
+                                            <small><?php echo esc_html(mb_substr($session['tour'], 0, 25)); ?><?php echo mb_strlen($session['tour']) > 25 ? '...' : ''; ?></small>
+                                        <?php else: ?>
+                                            <span style="color: #94a3b8;">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <?php echo $session['pasajeros'] ?: '-'; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <style>
+        .rtt-tracking-wrap {
+            padding: 20px;
+            max-width: 1400px;
+        }
+
+        .rtt-tracking-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 28px;
+            color: #1d2327;
+            margin-bottom: 10px;
+        }
+
+        .rtt-tracking-title .dashicons {
+            font-size: 32px;
+            width: 32px;
+            height: 32px;
+            color: #3b82f6;
+        }
+
+        .rtt-tracking-filters {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .rtt-tracking-filters select {
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+        }
+
+        .rtt-tracking-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .rtt-tracking-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 4px solid #ccc;
+        }
+
+        .rtt-card-starts { border-left-color: #3b82f6; }
+        .rtt-card-submits { border-left-color: #2db742; }
+        .rtt-card-rate { border-left-color: #8b5cf6; }
+        .rtt-card-abandoned { border-left-color: #f59e0b; }
+
+        .rtt-tracking-card .rtt-card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+        }
+
+        .rtt-card-starts .rtt-card-icon .dashicons { color: #3b82f6; }
+        .rtt-card-submits .rtt-card-icon .dashicons { color: #2db742; }
+        .rtt-card-rate .rtt-card-icon .dashicons { color: #8b5cf6; }
+        .rtt-card-abandoned .rtt-card-icon .dashicons { color: #f59e0b; }
+
+        .rtt-tracking-card .rtt-card-icon .dashicons {
+            font-size: 24px;
+            width: 24px;
+            height: 24px;
+        }
+
+        .rtt-tracking-card .rtt-card-info h3 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .rtt-tracking-card .rtt-card-info p {
+            margin: 5px 0 0;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .rtt-tracking-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .rtt-tracking-section h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            margin: 0 0 20px;
+            color: #1e293b;
+        }
+
+        .rtt-tracking-section h2 .dashicons {
+            color: #64748b;
+        }
+
+        /* Funnel */
+        .rtt-funnel-step {
+            margin-bottom: 20px;
+        }
+
+        .rtt-funnel-label {
+            margin-bottom: 8px;
+            color: #334155;
+        }
+
+        .rtt-funnel-bar-container {
+            background: #f1f5f9;
+            border-radius: 8px;
+            height: 40px;
+            overflow: hidden;
+        }
+
+        .rtt-funnel-bar {
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            height: 100%;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            min-width: 100px;
+            transition: width 0.5s ease;
+        }
+
+        .rtt-funnel-abandon {
+            margin-top: 5px;
+            color: #f59e0b;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .rtt-funnel-abandon .dashicons {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Step badge */
+        .rtt-step-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .rtt-step-1 {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .rtt-step-2 {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .rtt-step-3 {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        </style>
         <?php
     }
 }

@@ -11,6 +11,67 @@
     let passengerCount = 0;
     let datePicker = null;
     let initialized = false;
+    let trackingSessionId = null;
+
+    /**
+     * Generar ID de sesión único para tracking
+     */
+    function generateSessionId() {
+        if (trackingSessionId) {
+            return trackingSessionId;
+        }
+        // Intentar recuperar de sessionStorage
+        trackingSessionId = sessionStorage.getItem('rtt_session_id');
+        if (!trackingSessionId) {
+            trackingSessionId = 'rtt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('rtt_session_id', trackingSessionId);
+        }
+        return trackingSessionId;
+    }
+
+    /**
+     * Enviar evento de tracking
+     */
+    function trackFormEvent(eventType, step, extraData) {
+        if (typeof rttReservas === 'undefined') {
+            return;
+        }
+
+        var data = {
+            action: 'rtt_track_form',
+            session_id: generateSessionId(),
+            page_url: window.location.href,
+            page_title: document.title,
+            event_type: eventType,
+            step: step || currentStep,
+            lang: rttReservas.lang || 'es'
+        };
+
+        // Agregar datos extra
+        if (extraData) {
+            Object.assign(data, extraData);
+        }
+
+        // Capturar selección de tour si existe
+        var $tourSelect = $('#rtt-tour');
+        if ($tourSelect.length && $tourSelect.val()) {
+            data.tour_selected = $tourSelect.find('option:selected').text();
+        }
+
+        // Capturar fecha si existe
+        var $fecha = $('#rtt-fecha');
+        if ($fecha.length && $fecha.val()) {
+            data.fecha_selected = $fecha.val();
+        }
+
+        // Capturar cantidad de pasajeros
+        data.pasajeros_count = passengerCount;
+
+        // Enviar sin bloquear (fire and forget)
+        navigator.sendBeacon ?
+            navigator.sendBeacon(rttReservas.ajaxUrl, new URLSearchParams(data)) :
+            $.post(rttReservas.ajaxUrl, data);
+    }
 
     // Inicialización
     $(document).ready(function() {
@@ -46,6 +107,9 @@
         initPlanSelector($form);
 
         initialized = true;
+
+        // Tracking: formulario abierto/visible
+        trackFormEvent('form_open', 1);
     }
 
     // Exponer initForm globalmente para el modal
@@ -144,6 +208,9 @@
         currentStep = step;
         $('.rtt-step-' + currentStep).addClass('active');
         $('.rtt-progress-step[data-step="' + currentStep + '"]').addClass('active');
+
+        // Tracking: cambio de paso
+        trackFormEvent('step_view', step);
 
         // Scroll al inicio del formulario (solo si está visible)
         if ($container.is(':visible')) {
@@ -381,9 +448,15 @@
                     hideLoadingOverlay($form);
 
                     if (response.success) {
+                        // Tracking: formulario enviado exitosamente
+                        trackFormEvent('form_submit', 3, { codigo: response.data.codigo });
+
                         // Mostrar pantalla de éxito
                         showSuccessScreen($form, response.data.codigo, response.data.message);
                     } else {
+                        // Tracking: error en envío
+                        trackFormEvent('form_error', 3, { error: response.data.message });
+
                         showMessage(response.data.message, 'error');
                         $submitBtn.prop('disabled', false).html(originalText);
                     }
