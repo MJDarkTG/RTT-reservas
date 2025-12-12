@@ -101,14 +101,8 @@ class RTT_Admin_Reservas {
         // Obtener estadísticas
         $stats = RTT_Database::get_stats();
 
-        // Estados disponibles
-        $estados = [
-            'pendiente' => ['label' => __('Pendiente', 'rtt-reservas'), 'color' => '#f0ad4e'],
-            'confirmada' => ['label' => __('Confirmada', 'rtt-reservas'), 'color' => '#5bc0de'],
-            'pagada' => ['label' => __('Pagada', 'rtt-reservas'), 'color' => '#5cb85c'],
-            'completada' => ['label' => __('Completada', 'rtt-reservas'), 'color' => '#004070'],
-            'cancelada' => ['label' => __('Cancelada', 'rtt-reservas'), 'color' => '#d9534f'],
-        ];
+        // Estados disponibles (usar función compartida)
+        $estados = rtt_get_status_config();
 
         ?>
         <div class="wrap rtt-admin-reservas">
@@ -491,13 +485,7 @@ class RTT_Admin_Reservas {
      * Renderizar detalle de reserva
      */
     private function render_reserva_detail($reserva) {
-        $estados = [
-            'pendiente' => ['label' => __('Pendiente', 'rtt-reservas'), 'color' => '#f0ad4e'],
-            'confirmada' => ['label' => __('Confirmada', 'rtt-reservas'), 'color' => '#5bc0de'],
-            'pagada' => ['label' => __('Pagada', 'rtt-reservas'), 'color' => '#5cb85c'],
-            'completada' => ['label' => __('Completada', 'rtt-reservas'), 'color' => '#004070'],
-            'cancelada' => ['label' => __('Cancelada', 'rtt-reservas'), 'color' => '#d9534f'],
-        ];
+        $estados = rtt_get_status_config();
         ?>
         <div class="rtt-detail-header">
             <h2><?php echo esc_html($reserva->codigo); ?></h2>

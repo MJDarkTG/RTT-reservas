@@ -275,9 +275,14 @@ class RTT_Ajax {
      * Programar envío de email en segundo plano
      */
     private function schedule_email_send($data) {
-        // Guardar datos temporalmente para el cron
-        $transient_key = 'rtt_email_' . $data['reserva_id'];
-        set_transient($transient_key, $data, HOUR_IN_SECONDS);
+        // Guardar datos en la base de datos para persistencia (no transient)
+        $email_data = [
+            'reserva_id' => $data['reserva_id'],
+            'data' => $data,
+            'attempts' => 0,
+            'created_at' => current_time('mysql'),
+        ];
+        update_option('rtt_email_queue_' . $data['reserva_id'], $email_data, false);
 
         // Programar envío inmediato en segundo plano
         wp_schedule_single_event(time(), 'rtt_send_reservation_email', [$data['reserva_id']]);
@@ -287,23 +292,43 @@ class RTT_Ajax {
     }
 
     /**
-     * Enviar email de reserva (llamado por cron)
+     * Enviar email de reserva (llamado por cron) con sistema de reintentos
      */
     public static function send_reservation_email_cron($reserva_id) {
-        $transient_key = 'rtt_email_' . $reserva_id;
-        $data = get_transient($transient_key);
+        $option_key = 'rtt_email_queue_' . $reserva_id;
+        $email_data = get_option($option_key);
 
-        if (!$data) {
-            return; // Datos expirados o ya procesados
+        if (!$email_data || empty($email_data['data'])) {
+            return; // Datos no encontrados o ya procesados
         }
+
+        $data = $email_data['data'];
+        $attempts = isset($email_data['attempts']) ? (int)$email_data['attempts'] : 0;
+        $max_attempts = 3;
+
+        // Incrementar contador de intentos
+        $attempts++;
+        $email_data['attempts'] = $attempts;
+        update_option($option_key, $email_data, false);
+
+        // Actualizar intentos en BD
+        RTT_Database::update_email_attempts($reserva_id, $attempts);
 
         // Generar PDF
         $pdf_generator = new RTT_PDF();
         $pdf_content = $pdf_generator->generate($data);
 
         if (is_wp_error($pdf_content)) {
-            RTT_Database::update_notas($reserva_id, 'Error al generar PDF: ' . $pdf_content->get_error_message());
-            delete_transient($transient_key);
+            $error_msg = 'Error al generar PDF (intento ' . $attempts . '): ' . $pdf_content->get_error_message();
+            RTT_Database::update_notas($reserva_id, $error_msg);
+            RTT_Database::update_email_error($reserva_id, $error_msg);
+
+            // Reintentar si no se excedió el límite
+            if ($attempts < $max_attempts) {
+                self::schedule_retry($reserva_id, $attempts);
+            } else {
+                delete_option($option_key);
+            }
             return;
         }
 
@@ -312,11 +337,33 @@ class RTT_Ajax {
         $email_sent = $mailer->send_confirmation($data, $pdf_content);
 
         if (is_wp_error($email_sent)) {
-            RTT_Database::update_notas($reserva_id, 'Error al enviar email de confirmación');
+            $error_msg = 'Error al enviar email (intento ' . $attempts . '): ' . $email_sent->get_error_message();
+            RTT_Database::update_notas($reserva_id, $error_msg);
+            RTT_Database::update_email_error($reserva_id, $error_msg);
+
+            // Reintentar si no se excedió el límite
+            if ($attempts < $max_attempts) {
+                self::schedule_retry($reserva_id, $attempts);
+            } else {
+                delete_option($option_key);
+            }
+            return;
         }
 
-        // Limpiar transient
-        delete_transient($transient_key);
+        // Email enviado exitosamente
+        RTT_Database::update_email_sent($reserva_id);
+        delete_option($option_key);
+    }
+
+    /**
+     * Programar reintento de envío de email con backoff exponencial
+     */
+    private static function schedule_retry($reserva_id, $attempt) {
+        // Backoff exponencial: 5 min, 15 min, 45 min
+        $delays = [300, 900, 2700];
+        $delay = isset($delays[$attempt - 1]) ? $delays[$attempt - 1] : 2700;
+
+        wp_schedule_single_event(time() + $delay, 'rtt_send_reservation_email', [$reserva_id]);
     }
 
     /**

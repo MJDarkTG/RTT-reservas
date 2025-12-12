@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 
 class RTT_Database {
 
-    const DB_VERSION = '1.4';
+    const DB_VERSION = '1.5';
 
     /**
      * Crear tablas en la base de datos
@@ -35,6 +35,9 @@ class RTT_Database {
             estado varchar(20) NOT NULL DEFAULT 'pendiente',
             idioma varchar(5) NOT NULL DEFAULT 'es',
             notas text,
+            email_sent_at datetime DEFAULT NULL,
+            email_attempts int(11) NOT NULL DEFAULT 0,
+            email_error text,
             fecha_creacion datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             fecha_actualizacion datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
@@ -42,7 +45,8 @@ class RTT_Database {
             KEY estado (estado),
             KEY fecha_tour (fecha_tour),
             KEY fecha_creacion (fecha_creacion),
-            KEY tour (tour(100))
+            KEY tour (tour(100)),
+            KEY email (email(100))
         ) $charset_collate;";
 
         // Tabla de pasajeros
@@ -333,7 +337,7 @@ class RTT_Database {
     public static function update_estado($id, $estado) {
         global $wpdb;
 
-        $estados_validos = ['pendiente', 'confirmada', 'pagada', 'completada', 'cancelada'];
+        $estados_validos = rtt_get_valid_statuses();
         if (!in_array($estado, $estados_validos)) {
             return new WP_Error('invalid_status', 'Estado no válido');
         }
@@ -356,6 +360,54 @@ class RTT_Database {
 
         $table = $wpdb->prefix . 'rtt_reservas';
         $result = $wpdb->update($table, ['notas' => sanitize_textarea_field($notas)], ['id' => $id], ['%s'], ['%d']);
+
+        return $result !== false;
+    }
+
+    /**
+     * Marcar email como enviado
+     */
+    public static function update_email_sent($id) {
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'rtt_reservas';
+        $peru_tz = new DateTimeZone('America/Lima');
+        $now = new DateTime('now', $peru_tz);
+
+        $result = $wpdb->update(
+            $table,
+            [
+                'email_sent_at' => $now->format('Y-m-d H:i:s'),
+                'email_error' => null
+            ],
+            ['id' => $id],
+            ['%s', '%s'],
+            ['%d']
+        );
+
+        return $result !== false;
+    }
+
+    /**
+     * Actualizar intentos de envío de email
+     */
+    public static function update_email_attempts($id, $attempts) {
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'rtt_reservas';
+        $result = $wpdb->update($table, ['email_attempts' => $attempts], ['id' => $id], ['%d'], ['%d']);
+
+        return $result !== false;
+    }
+
+    /**
+     * Actualizar error de email
+     */
+    public static function update_email_error($id, $error) {
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'rtt_reservas';
+        $result = $wpdb->update($table, ['email_error' => sanitize_text_field($error)], ['id' => $id], ['%s'], ['%d']);
 
         return $result !== false;
     }

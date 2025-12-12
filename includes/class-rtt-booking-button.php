@@ -277,43 +277,10 @@ class RTT_Booking_Button {
     }
 
     /**
-     * Traducciones para JavaScript
+     * Traducciones para JavaScript (usa método compartido de clase principal)
      */
     private function get_js_translations() {
-        return [
-            'step1Title' => __('Tour y Fecha', 'rtt-reservas'),
-            'step2Title' => __('Pasajeros', 'rtt-reservas'),
-            'step3Title' => __('Representante', 'rtt-reservas'),
-            'next' => __('Siguiente', 'rtt-reservas'),
-            'previous' => __('Anterior', 'rtt-reservas'),
-            'submit' => __('Enviar Reserva', 'rtt-reservas'),
-            'processing' => __('Procesando...', 'rtt-reservas'),
-            'success' => __('Reserva enviada correctamente. Revisa tu correo.', 'rtt-reservas'),
-            'error' => __('Error al enviar la reserva. Intenta nuevamente.', 'rtt-reservas'),
-            'requiredField' => __('Este campo es requerido', 'rtt-reservas'),
-            'invalidEmail' => __('Email inválido', 'rtt-reservas'),
-            'selectTour' => __('Selecciona un tour', 'rtt-reservas'),
-            'selectDate' => __('Selecciona una fecha', 'rtt-reservas'),
-            'addPassenger' => __('Agregar pasajero', 'rtt-reservas'),
-            'removePassenger' => __('Eliminar', 'rtt-reservas'),
-            'passenger' => __('Pasajero', 'rtt-reservas'),
-            'docType' => __('Tipo de documento', 'rtt-reservas'),
-            'docNumber' => __('Número de documento', 'rtt-reservas'),
-            'fullName' => __('Nombres y apellidos', 'rtt-reservas'),
-            'gender' => __('Género', 'rtt-reservas'),
-            'male' => __('Masculino', 'rtt-reservas'),
-            'female' => __('Femenino', 'rtt-reservas'),
-            'birthDate' => __('Fecha de nacimiento', 'rtt-reservas'),
-            'nationality' => __('Nacionalidad', 'rtt-reservas'),
-            'allergies' => __('Alergias u observaciones', 'rtt-reservas'),
-            'representativeName' => __('Nombre del representante', 'rtt-reservas'),
-            'email' => __('Correo electrónico', 'rtt-reservas'),
-            'phone' => __('Teléfono', 'rtt-reservas'),
-            'country' => __('País', 'rtt-reservas'),
-            'dni' => __('DNI', 'rtt-reservas'),
-            'passport' => __('Pasaporte', 'rtt-reservas'),
-            'minPassengers' => __('Debe agregar al menos un pasajero', 'rtt-reservas'),
-        ];
+        return RTT_Reservas::get_shared_js_translations();
     }
 
     /**

@@ -3,7 +3,7 @@
  * Plugin Name: RTT Reservas
  * Plugin URI: https://readytotravelperu.com
  * Description: Tour booking system with wizard form, PDF generation and email notifications.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Author: Ready To Travel Peru
  * Author URI: https://readytotravelperu.com
  * Text Domain: rtt-reservas
@@ -20,10 +20,37 @@ if (!defined('ABSPATH')) {
 }
 
 // Definir constantes del plugin
-define('RTT_RESERVAS_VERSION', '1.4.0');
+define('RTT_RESERVAS_VERSION', '1.5.0');
 define('RTT_RESERVAS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RTT_RESERVAS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('RTT_RESERVAS_PLUGIN_BASENAME', plugin_basename(__FILE__));
+
+// Constantes de estados de reserva
+define('RTT_STATUS_PENDING', 'pendiente');
+define('RTT_STATUS_CONFIRMED', 'confirmada');
+define('RTT_STATUS_PAID', 'pagada');
+define('RTT_STATUS_COMPLETED', 'completada');
+define('RTT_STATUS_CANCELLED', 'cancelada');
+
+/**
+ * Obtener configuración de estados (labels y colores)
+ */
+function rtt_get_status_config() {
+    return [
+        RTT_STATUS_PENDING => ['label' => __('Pendiente', 'rtt-reservas'), 'color' => '#f0ad4e'],
+        RTT_STATUS_CONFIRMED => ['label' => __('Confirmada', 'rtt-reservas'), 'color' => '#5bc0de'],
+        RTT_STATUS_PAID => ['label' => __('Pagada', 'rtt-reservas'), 'color' => '#5cb85c'],
+        RTT_STATUS_COMPLETED => ['label' => __('Completada', 'rtt-reservas'), 'color' => '#004070'],
+        RTT_STATUS_CANCELLED => ['label' => __('Cancelada', 'rtt-reservas'), 'color' => '#d9534f'],
+    ];
+}
+
+/**
+ * Obtener lista de estados válidos
+ */
+function rtt_get_valid_statuses() {
+    return [RTT_STATUS_PENDING, RTT_STATUS_CONFIRMED, RTT_STATUS_PAID, RTT_STATUS_COMPLETED, RTT_STATUS_CANCELLED];
+}
 
 /**
  * Clase principal del plugin
@@ -223,9 +250,16 @@ final class RTT_Reservas {
     }
 
     /**
-     * Traducciones para JavaScript
+     * Traducciones para JavaScript (usa método estático compartido)
      */
     private function get_js_translations() {
+        return self::get_shared_js_translations();
+    }
+
+    /**
+     * Traducciones compartidas para JavaScript (estático para uso en otras clases)
+     */
+    public static function get_shared_js_translations() {
         return [
             'step1Title' => __('Tour y Fecha', 'rtt-reservas'),
             'step2Title' => __('Pasajeros', 'rtt-reservas'),
