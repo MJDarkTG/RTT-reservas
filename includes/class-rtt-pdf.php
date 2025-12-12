@@ -224,7 +224,7 @@
           $pdf->SetTextColor(128, 128, 128);
           $pdf->SetFont('Helvetica', '', 9);
           $date_text = $lang === 'en' ? 'Generated on: ' : 'Generado el: ';
-          $pdf->Cell(0, 5, $date_text . date('d/m/Y H:i'), 0, 1, 'C');
+          $pdf->Cell(0, 5, $date_text . current_time('d/m/Y H:i'), 0, 1, 'C');
 
           $pdf->Ln(8);
       }
