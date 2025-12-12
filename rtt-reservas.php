@@ -3,7 +3,7 @@
  * Plugin Name: RTT Reservas
  * Plugin URI: https://readytotravelperu.com
  * Description: Tour booking system with wizard form, PDF generation and email notifications.
- * Version: 1.5.0
+ * Version: 1.6.0
  * Author: Ready To Travel Peru
  * Author URI: https://readytotravelperu.com
  * Text Domain: rtt-reservas
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Definir constantes del plugin
-define('RTT_RESERVAS_VERSION', '1.5.0');
+define('RTT_RESERVAS_VERSION', '1.6.0');
 define('RTT_RESERVAS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RTT_RESERVAS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('RTT_RESERVAS_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -98,6 +98,7 @@ final class RTT_Reservas {
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-admin.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-admin-reservas.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-admin-stats.php';
+        require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-admin-calendar.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-manual.php';
     }
 
@@ -137,6 +138,10 @@ final class RTT_Reservas {
 
         // Panel de estadísticas
         new RTT_Admin_Stats();
+
+        // Calendario de tours
+        $calendar = new RTT_Admin_Calendar();
+        $calendar->init();
     }
 
     /**

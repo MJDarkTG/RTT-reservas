@@ -656,4 +656,93 @@ class RTT_Database {
 
         return $results ?: [];
     }
+
+    /**
+     * Obtener reservas para el calendario
+     */
+    public static function get_reservas_for_calendar($start_date, $end_date, $tour_filter = '') {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_reservas';
+
+        $where = "fecha_tour BETWEEN %s AND %s";
+        $values = [$start_date, $end_date];
+
+        if (!empty($tour_filter)) {
+            $where .= " AND tour LIKE %s";
+            $values[] = '%' . $wpdb->esc_like($tour_filter) . '%';
+        }
+
+        $sql = "SELECT
+                    id,
+                    codigo,
+                    tour,
+                    fecha_tour,
+                    nombre_representante,
+                    email,
+                    cantidad_pasajeros,
+                    estado,
+                    fecha_creacion
+                FROM {$table}
+                WHERE {$where}
+                ORDER BY fecha_tour ASC, tour ASC";
+
+        return $wpdb->get_results($wpdb->prepare($sql, $values), ARRAY_A);
+    }
+
+    /**
+     * Obtener resumen de reservas por día para el calendario
+     */
+    public static function get_calendar_summary($start_date, $end_date) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_reservas';
+
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT
+                fecha_tour,
+                COUNT(*) as total_reservas,
+                SUM(cantidad_pasajeros) as total_pasajeros,
+                SUM(CASE WHEN estado = 'pendiente' THEN 1 ELSE 0 END) as pendientes,
+                SUM(CASE WHEN estado = 'confirmada' THEN 1 ELSE 0 END) as confirmadas,
+                SUM(CASE WHEN estado = 'pagada' THEN 1 ELSE 0 END) as pagadas,
+                SUM(CASE WHEN estado = 'completada' THEN 1 ELSE 0 END) as completadas,
+                SUM(CASE WHEN estado = 'cancelada' THEN 1 ELSE 0 END) as canceladas,
+                GROUP_CONCAT(DISTINCT tour SEPARATOR '|') as tours
+            FROM {$table}
+            WHERE fecha_tour BETWEEN %s AND %s
+            GROUP BY fecha_tour
+            ORDER BY fecha_tour ASC
+        ", $start_date, $end_date), ARRAY_A);
+
+        return $results ?: [];
+    }
+
+    /**
+     * Obtener alertas de tours próximos sin confirmación
+     */
+    public static function get_upcoming_pending_alerts($days_ahead = 7) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_reservas';
+
+        $today = date('Y-m-d');
+        $end_date = date('Y-m-d', strtotime("+{$days_ahead} days"));
+
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT
+                id,
+                codigo,
+                tour,
+                fecha_tour,
+                nombre_representante,
+                email,
+                cantidad_pasajeros,
+                estado,
+                DATEDIFF(fecha_tour, %s) as dias_restantes
+            FROM {$table}
+            WHERE fecha_tour BETWEEN %s AND %s
+            AND estado = 'pendiente'
+            ORDER BY fecha_tour ASC
+        ", $today, $today, $end_date), ARRAY_A);
+
+        return $results ?: [];
+    }
 }
