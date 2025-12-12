@@ -224,7 +224,10 @@
           $pdf->SetTextColor(128, 128, 128);
           $pdf->SetFont('Helvetica', '', 9);
           $date_text = $lang === 'en' ? 'Generated on: ' : 'Generado el: ';
-          $pdf->Cell(0, 5, $date_text . current_time('d/m/Y H:i'), 0, 1, 'C');
+          // Usar timezone de Lima/Peru explícitamente
+          $peru_tz = new DateTimeZone('America/Lima');
+          $now = new DateTime('now', $peru_tz);
+          $pdf->Cell(0, 5, $date_text . $now->format('d/m/Y H:i'), 0, 1, 'C');
 
           $pdf->Ln(8);
       }
