@@ -67,10 +67,8 @@
         // Capturar cantidad de pasajeros
         data.pasajeros_count = passengerCount;
 
-        // Enviar sin bloquear (fire and forget)
-        navigator.sendBeacon ?
-            navigator.sendBeacon(rttReservas.ajaxUrl, new URLSearchParams(data)) :
-            $.post(rttReservas.ajaxUrl, data);
+        // Enviar via AJAX (fire and forget)
+        $.post(rttReservas.ajaxUrl, data);
     }
 
     // Inicialización

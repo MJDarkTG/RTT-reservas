@@ -573,4 +573,35 @@ class RTT_Database {
 
         $wpdb->query("DELETE FROM {$table} WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY)");
     }
+
+    /**
+     * Obtener eventos de tracking recientes (individuales)
+     */
+    public static function get_tracking_events($days = 7, $limit = 100) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_form_tracking';
+
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT
+                id,
+                session_id,
+                ip,
+                page_url,
+                page_title,
+                step,
+                event_type,
+                tour_selected,
+                fecha_selected,
+                pasajeros_count,
+                user_agent,
+                lang,
+                created_at
+            FROM {$table}
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL %d DAY)
+            ORDER BY created_at DESC
+            LIMIT %d
+        ", $days, $limit), ARRAY_A);
+
+        return $results ?: [];
+    }
 }

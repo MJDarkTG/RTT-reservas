@@ -1355,6 +1355,89 @@ class RTT_Admin_Stats {
                     </tbody>
                 </table>
             </div>
+
+            <!-- Log de eventos individuales -->
+            <div class="rtt-tracking-section">
+                <h2><span class="dashicons dashicons-list-view"></span> <?php _e('Log de Eventos (Individual)', 'rtt-reservas'); ?></h2>
+                <p style="color: #64748b; margin-bottom: 15px;">
+                    <?php _e('Cada evento del formulario con fecha y hora exacta.', 'rtt-reservas'); ?>
+                </p>
+                <?php
+                $events = RTT_Database::get_tracking_events($days, 100);
+                $event_labels = [
+                    'form_open' => ['label' => __('Abrió formulario', 'rtt-reservas'), 'icon' => 'visibility', 'color' => '#3b82f6'],
+                    'step_view' => ['label' => __('Cambió a paso', 'rtt-reservas'), 'icon' => 'arrow-right-alt', 'color' => '#8b5cf6'],
+                    'form_submit' => ['label' => __('Envió reserva', 'rtt-reservas'), 'icon' => 'yes-alt', 'color' => '#2db742'],
+                    'form_error' => ['label' => __('Error en envío', 'rtt-reservas'), 'icon' => 'warning', 'color' => '#dc2626'],
+                ];
+                ?>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 150px;"><?php _e('Fecha/Hora', 'rtt-reservas'); ?></th>
+                            <th style="width: 140px;"><?php _e('Evento', 'rtt-reservas'); ?></th>
+                            <th style="width: 80px;"><?php _e('Paso', 'rtt-reservas'); ?></th>
+                            <th><?php _e('Página', 'rtt-reservas'); ?></th>
+                            <th style="width: 120px;"><?php _e('IP', 'rtt-reservas'); ?></th>
+                            <th style="width: 150px;"><?php _e('Tour', 'rtt-reservas'); ?></th>
+                            <th style="width: 100px;"><?php _e('Sesión', 'rtt-reservas'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($events)): ?>
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 30px; color: #64748b;">
+                                    <?php _e('No hay eventos registrados en este período.', 'rtt-reservas'); ?>
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($events as $event):
+                                $event_info = $event_labels[$event['event_type']] ?? ['label' => $event['event_type'], 'icon' => 'marker', 'color' => '#64748b'];
+                                $local_time = get_date_from_gmt($event['created_at'], 'd/m/Y H:i:s');
+                            ?>
+                                <tr>
+                                    <td>
+                                        <strong><?php echo esc_html($local_time); ?></strong>
+                                    </td>
+                                    <td>
+                                        <span style="display: inline-flex; align-items: center; gap: 5px; color: <?php echo $event_info['color']; ?>;">
+                                            <span class="dashicons dashicons-<?php echo $event_info['icon']; ?>" style="font-size: 16px; width: 16px; height: 16px;"></span>
+                                            <?php echo esc_html($event_info['label']); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="rtt-step-badge rtt-step-<?php echo $event['step']; ?>">
+                                            <?php echo esc_html($step_names[$event['step']] ?? 'Paso ' . $event['step']); ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="<?php echo esc_url($event['page_url']); ?>" target="_blank" style="color: #3b82f6; font-size: 12px;">
+                                            <?php echo esc_html(mb_substr($event['page_title'] ?: wp_parse_url($event['page_url'], PHP_URL_PATH), 0, 40)); ?>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <code style="font-size: 11px;"><?php echo esc_html($event['ip']); ?></code>
+                                    </td>
+                                    <td>
+                                        <?php if ($event['tour_selected']): ?>
+                                            <small title="<?php echo esc_attr($event['tour_selected']); ?>">
+                                                <?php echo esc_html(mb_substr($event['tour_selected'], 0, 20)); ?><?php echo mb_strlen($event['tour_selected']) > 20 ? '...' : ''; ?>
+                                            </small>
+                                        <?php else: ?>
+                                            <span style="color: #94a3b8;">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <code style="font-size: 9px; color: #94a3b8;" title="<?php echo esc_attr($event['session_id']); ?>">
+                                            <?php echo esc_html(substr($event['session_id'], -8)); ?>
+                                        </code>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <style>
