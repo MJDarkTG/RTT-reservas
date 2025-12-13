@@ -178,6 +178,41 @@ class RTT_Admin {
             'rtt_booking_section',
             ['field' => 'max_passengers']
         );
+
+        // Sección Notificaciones WhatsApp (CallMeBot)
+        add_settings_section(
+            'rtt_whatsapp_section',
+            __('Notificaciones WhatsApp (CallMeBot)', 'rtt-reservas'),
+            [$this, 'whatsapp_section_callback'],
+            'rtt-reservas'
+        );
+
+        add_settings_field(
+            'whatsapp_enabled',
+            __('Activar notificaciones', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_whatsapp_section',
+            ['field' => 'whatsapp_enabled']
+        );
+
+        add_settings_field(
+            'whatsapp_phone',
+            __('Número de WhatsApp', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_whatsapp_section',
+            ['field' => 'whatsapp_phone']
+        );
+
+        add_settings_field(
+            'whatsapp_apikey',
+            __('API Key de CallMeBot', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_whatsapp_section',
+            ['field' => 'whatsapp_apikey']
+        );
     }
 
     /**
@@ -192,6 +227,20 @@ class RTT_Admin {
      */
     public function email_template_section_callback() {
         echo '<p>' . __('Personaliza la apariencia del email de confirmación que reciben los clientes.', 'rtt-reservas') . '</p>';
+    }
+
+    /**
+     * Callback de sección WhatsApp
+     */
+    public function whatsapp_section_callback() {
+        echo '<p>' . __('Recibe alertas en WhatsApp cuando llegue una nueva reserva usando CallMeBot (gratis).', 'rtt-reservas') . '</p>';
+        echo '<p><strong>' . __('Pasos para configurar:', 'rtt-reservas') . '</strong></p>';
+        echo '<ol>';
+        echo '<li>' . __('Agrega el número <code>+34 644 71 81 99</code> a tus contactos de WhatsApp', 'rtt-reservas') . '</li>';
+        echo '<li>' . __('Envía el mensaje <code>I allow callmebot to send me messages</code> desde tu WhatsApp', 'rtt-reservas') . '</li>';
+        echo '<li>' . __('Recibirás tu API Key. Cópiala aquí abajo.', 'rtt-reservas') . '</li>';
+        echo '</ol>';
+        echo '<p><a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank">' . __('Ver instrucciones completas', 'rtt-reservas') . ' →</a></p>';
     }
 
     /**
@@ -256,6 +305,23 @@ class RTT_Admin {
                 echo '<input type="text" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value ?: $default) . '" class="regular-text">';
                 break;
 
+            case 'whatsapp_enabled':
+                echo '<label>';
+                echo '<input type="checkbox" name="rtt_reservas_options[' . esc_attr($field) . ']" value="1"' . checked($value, '1', false) . '>';
+                echo ' ' . __('Enviar alerta por WhatsApp cuando llegue una nueva reserva', 'rtt-reservas');
+                echo '</label>';
+                break;
+
+            case 'whatsapp_phone':
+                echo '<input type="text" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value) . '" class="regular-text" placeholder="+51999999999">';
+                echo '<p class="description">' . __('Tu número de WhatsApp con código de país, sin espacios (ej: +51999999999)', 'rtt-reservas') . '</p>';
+                break;
+
+            case 'whatsapp_apikey':
+                echo '<input type="text" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value) . '" class="regular-text" placeholder="123456">';
+                echo '<p class="description">' . __('API Key que te envió CallMeBot por WhatsApp', 'rtt-reservas') . '</p>';
+                break;
+
             default:
                 echo '<input type="text" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value) . '" class="regular-text">';
         }
@@ -294,6 +360,11 @@ class RTT_Admin {
         $sanitized['email_contact_email'] = sanitize_email($input['email_contact_email'] ?? '');
         $sanitized['email_whatsapp'] = sanitize_text_field($input['email_whatsapp'] ?? '');
         $sanitized['email_website'] = sanitize_text_field($input['email_website'] ?? '');
+
+        // Campos de WhatsApp CallMeBot
+        $sanitized['whatsapp_enabled'] = isset($input['whatsapp_enabled']) ? '1' : '';
+        $sanitized['whatsapp_phone'] = preg_replace('/[^0-9+]/', '', $input['whatsapp_phone'] ?? '');
+        $sanitized['whatsapp_apikey'] = sanitize_text_field($input['whatsapp_apikey'] ?? '');
 
         return $sanitized;
     }
@@ -337,6 +408,16 @@ class RTT_Admin {
                 <button type="button" id="rtt-send-test" class="button button-secondary"><?php _e('Enviar prueba', 'rtt-reservas'); ?></button>
                 <span id="rtt-test-result" style="margin-left: 10px;"></span>
             </div>
+
+            <div class="rtt-test-whatsapp" style="background: #fff; padding: 20px; border: 1px solid #ccc; border-left: 4px solid #25D366; margin-top: 20px;">
+                <h3 style="color: #25D366;"><?php _e('Probar notificación WhatsApp', 'rtt-reservas'); ?></h3>
+                <p><?php _e('Envía un mensaje de prueba para verificar la configuración de CallMeBot.', 'rtt-reservas'); ?></p>
+                <button type="button" id="rtt-send-whatsapp-test" class="button button-secondary" style="background: #25D366; color: white; border-color: #25D366;">
+                    <span class="dashicons dashicons-whatsapp" style="margin-top: 3px;"></span>
+                    <?php _e('Enviar prueba WhatsApp', 'rtt-reservas'); ?>
+                </button>
+                <span id="rtt-whatsapp-result" style="margin-left: 10px;"></span>
+            </div>
         </div>
 
         <script>
@@ -360,6 +441,27 @@ class RTT_Admin {
                     } else {
                         $('#rtt-test-result').html('<span style="color: red;">✗ ' + response.data.message + '</span>');
                     }
+                });
+            });
+
+            $('#rtt-send-whatsapp-test').on('click', function() {
+                var btn = $(this);
+                btn.prop('disabled', true);
+                $('#rtt-whatsapp-result').text('<?php _e('Enviando...', 'rtt-reservas'); ?>');
+
+                $.post(ajaxurl, {
+                    action: 'rtt_test_whatsapp',
+                    nonce: '<?php echo wp_create_nonce('rtt_test_whatsapp'); ?>'
+                }, function(response) {
+                    btn.prop('disabled', false);
+                    if (response.success) {
+                        $('#rtt-whatsapp-result').html('<span style="color: green;">✓ ' + response.data.message + '</span>');
+                    } else {
+                        $('#rtt-whatsapp-result').html('<span style="color: red;">✗ ' + response.data.message + '</span>');
+                    }
+                }).fail(function() {
+                    btn.prop('disabled', false);
+                    $('#rtt-whatsapp-result').html('<span style="color: red;">✗ Error de conexión</span>');
                 });
             });
         });

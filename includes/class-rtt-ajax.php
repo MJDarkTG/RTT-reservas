@@ -87,6 +87,14 @@ class RTT_Ajax {
         // Programar envío de email en segundo plano (más rápido para el usuario)
         $this->schedule_email_send($data);
 
+        // Enviar notificación por WhatsApp (si está habilitado)
+        if (RTT_WhatsApp::is_enabled()) {
+            $reserva = RTT_Database::get_reserva($reserva_result['id']);
+            if ($reserva) {
+                RTT_WhatsApp::send_new_reservation_alert($reserva);
+            }
+        }
+
         // Respuesta exitosa (inmediata, sin esperar el email)
         $lang = sanitize_text_field($_POST['lang'] ?? 'es');
         $success_message = $lang === 'en'
