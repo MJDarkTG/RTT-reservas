@@ -236,7 +236,7 @@ class RTT_Admin {
         echo '<p>' . __('Recibe alertas en WhatsApp cuando llegue una nueva reserva usando CallMeBot (gratis).', 'rtt-reservas') . '</p>';
         echo '<p><strong>' . __('Pasos para configurar:', 'rtt-reservas') . '</strong></p>';
         echo '<ol>';
-        echo '<li>' . __('Agrega el número <code>+34 644 71 81 99</code> a tus contactos de WhatsApp', 'rtt-reservas') . '</li>';
+        echo '<li>' . __('Agrega el número <code>+34 623 78 95 80</code> a tus contactos de WhatsApp', 'rtt-reservas') . '</li>';
         echo '<li>' . __('Envía el mensaje <code>I allow callmebot to send me messages</code> desde tu WhatsApp', 'rtt-reservas') . '</li>';
         echo '<li>' . __('Recibirás tu API Key. Cópiala aquí abajo.', 'rtt-reservas') . '</li>';
         echo '</ol>';
