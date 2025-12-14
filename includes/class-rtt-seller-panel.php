@@ -197,6 +197,14 @@ class RTT_Seller_Panel {
         $id = intval($_POST['id'] ?? 0);
         $user = wp_get_current_user();
 
+        // Procesar costos JSON
+        $costos_json = stripslashes($_POST['costos_json'] ?? '[]');
+        $costos = json_decode($costos_json, true) ?: [];
+        $costo_total = 0;
+        foreach ($costos as $costo) {
+            $costo_total += floatval($costo['monto'] ?? 0);
+        }
+
         $data = [
             'vendedor_id' => $user->ID,
             'cliente_nombre' => sanitize_text_field($_POST['cliente_nombre'] ?? ''),
@@ -213,6 +221,11 @@ class RTT_Seller_Panel {
             'notas' => sanitize_textarea_field($_POST['notas'] ?? ''),
             'moneda' => sanitize_text_field($_POST['moneda'] ?? 'USD'),
             'validez_dias' => intval($_POST['validez_dias'] ?? 7),
+            // Costos internos (nuevo formato JSON)
+            'costos_json' => $costos_json,
+            'costo_total' => $costo_total,
+            'tipo_cambio' => floatval($_POST['tipo_cambio'] ?? 3.70),
+            'notas_internas' => sanitize_textarea_field($_POST['notas_internas'] ?? ''),
         ];
 
         // Validar campos requeridos
@@ -457,10 +470,18 @@ class RTT_Seller_Panel {
     }
 
     /**
-     * Header común del panel
+     * Header común del panel con sidebar moderno
      */
-    private function render_header($title = 'Panel de Vendedor') {
+    private function render_header($title = 'Panel de Vendedor', $active_page = '') {
         $user = wp_get_current_user();
+        $initials = strtoupper(substr($user->display_name, 0, 2));
+        $is_admin = in_array('administrator', $user->roles);
+
+        // Determinar página activa
+        if (empty($active_page)) {
+            $action = get_query_var('rtt_seller_action', 'dashboard');
+            $active_page = $action;
+        }
         ?>
         <!DOCTYPE html>
         <html lang="es">
@@ -469,30 +490,78 @@ class RTT_Seller_Panel {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <meta name="robots" content="noindex, nofollow">
             <title><?php echo esc_html($title); ?> - RTT Reservas</title>
-            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-            <style>
-                <?php echo $this->get_panel_styles(); ?>
-            </style>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+            <link rel="stylesheet" href="<?php echo RTT_RESERVAS_PLUGIN_URL; ?>assets/css/seller-panel.css?v=<?php echo RTT_RESERVAS_VERSION; ?>">
         </head>
         <body>
-            <nav class="navbar">
-                <div class="nav-brand">
-                    <span class="brand-icon">RTT</span>
-                    <span>Panel de Vendedor</span>
-                </div>
-                <div class="nav-menu">
-                    <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/'); ?>" class="nav-link">Dashboard</a>
-                    <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/nueva/'); ?>" class="nav-link">Nueva Cotización</a>
-                    <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/lista/'); ?>" class="nav-link">Mis Cotizaciones</a>
-                    <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/proveedores/'); ?>" class="nav-link">Proveedores</a>
-                    <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/configuracion/'); ?>" class="nav-link">⚙️</a>
-                </div>
-                <div class="nav-user">
-                    <span><?php echo esc_html($user->display_name); ?></span>
-                    <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/logout/'); ?>" class="btn-logout">Salir</a>
-                </div>
-            </nav>
-            <main class="main-content">
+            <div class="app-layout">
+                <!-- Sidebar -->
+                <aside class="sidebar">
+                    <div class="sidebar-header">
+                        <div class="sidebar-logo">RTT</div>
+                        <div class="sidebar-brand">
+                            <h1>Cotizador</h1>
+                            <span>Ready To Travel</span>
+                        </div>
+                    </div>
+
+                    <nav class="sidebar-nav">
+                        <div class="nav-section">
+                            <span class="nav-section-title">Principal</span>
+                            <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/'); ?>" class="nav-item <?php echo $active_page === 'dashboard' ? 'active' : ''; ?>">
+                                <span class="nav-icon">📊</span>
+                                <span class="nav-text">Dashboard</span>
+                            </a>
+                            <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/nueva/'); ?>" class="nav-item <?php echo $active_page === 'nueva' ? 'active' : ''; ?>">
+                                <span class="nav-icon">➕</span>
+                                <span class="nav-text">Nueva Cotización</span>
+                            </a>
+                            <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/lista/'); ?>" class="nav-item <?php echo $active_page === 'lista' ? 'active' : ''; ?>">
+                                <span class="nav-icon">📋</span>
+                                <span class="nav-text">Mis Cotizaciones</span>
+                            </a>
+                        </div>
+
+                        <div class="nav-section">
+                            <span class="nav-section-title">Gestión</span>
+                            <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/proveedores/'); ?>" class="nav-item <?php echo $active_page === 'proveedores' ? 'active' : ''; ?>">
+                                <span class="nav-icon">🏢</span>
+                                <span class="nav-text">Proveedores</span>
+                            </a>
+                            <?php if ($is_admin): ?>
+                            <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/configuracion/'); ?>" class="nav-item <?php echo $active_page === 'configuracion' ? 'active' : ''; ?>">
+                                <span class="nav-icon">⚙️</span>
+                                <span class="nav-text">Configuración</span>
+                            </a>
+                            <?php endif; ?>
+                        </div>
+                    </nav>
+
+                    <div class="sidebar-user">
+                        <div class="user-avatar"><?php echo esc_html($initials); ?></div>
+                        <div class="user-info">
+                            <span class="user-name"><?php echo esc_html($user->display_name); ?></span>
+                            <span class="user-role"><?php echo $is_admin ? 'Administrador' : 'Vendedor'; ?></span>
+                        </div>
+                        <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/logout/'); ?>" class="btn-logout-small" title="Cerrar sesión">🚪</a>
+                    </div>
+                </aside>
+
+                <!-- Overlay for mobile -->
+                <div class="sidebar-overlay"></div>
+
+                <!-- Main Content -->
+                <div class="main-wrapper">
+                    <header class="header-bar">
+                        <button class="mobile-menu-btn" type="button">☰</button>
+                        <h1 class="header-title"><?php echo esc_html($title); ?></h1>
+                        <div class="header-actions">
+                            <?php if ($active_page !== 'nueva'): ?>
+                            <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/nueva/'); ?>" class="btn btn-success btn-sm">+ Nueva</a>
+                            <?php endif; ?>
+                        </div>
+                    </header>
+                    <main class="main-content">
         <?php
     }
 
@@ -501,13 +570,18 @@ class RTT_Seller_Panel {
      */
     private function render_footer($extra_scripts = '') {
         ?>
-            </main>
+                    </main>
+                </div><!-- .main-wrapper -->
+            </div><!-- .app-layout -->
+
             <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             <script>
                 var rttAjax = {
-                    url: '<?php echo admin_url('admin-ajax.php'); ?>'
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    dashboardUrl: '<?php echo home_url('/' . self::PAGE_SLUG . '/'); ?>'
                 };
             </script>
+            <script src="<?php echo RTT_RESERVAS_PLUGIN_URL; ?>assets/js/seller-panel.js?v=<?php echo RTT_RESERVAS_VERSION; ?>"></script>
             <?php if (!empty($extra_scripts)): ?>
             <script>
                 jQuery(document).ready(function($) {
@@ -515,7 +589,6 @@ class RTT_Seller_Panel {
                 });
             </script>
             <?php endif; ?>
-            <?php echo $this->get_panel_scripts(); ?>
         </body>
         </html>
         <?php
@@ -533,58 +606,34 @@ class RTT_Seller_Panel {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <meta name="robots" content="noindex, nofollow">
             <title>Iniciar Sesión - RTT Vendedor</title>
-            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-            <style>
-                <?php echo $this->get_login_styles(); ?>
-            </style>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+            <link rel="stylesheet" href="<?php echo RTT_RESERVAS_PLUGIN_URL; ?>assets/css/seller-panel.css?v=<?php echo RTT_RESERVAS_VERSION; ?>">
         </head>
-        <body>
-            <div class="login-container">
-                <div class="login-box">
-                    <div class="login-header">
-                        <div class="brand-icon">RTT</div>
-                        <h1>Panel de Vendedor</h1>
-                        <p>Ready To Travel Peru</p>
-                    </div>
-                    <form id="login-form" class="login-form">
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" name="email" required placeholder="tu@email.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="password">Contraseña</label>
-                            <input type="password" id="password" name="password" required placeholder="••••••••">
-                        </div>
-                        <button type="submit" class="btn-login">Iniciar Sesión</button>
-                        <div id="login-error" class="error-message" style="display: none;"></div>
-                    </form>
+        <body class="login-page">
+            <div class="login-box">
+                <div class="login-header">
+                    <div class="brand-icon">RTT</div>
+                    <h1>Panel de Vendedor</h1>
+                    <p>Ready To Travel Peru</p>
                 </div>
+                <form id="login-form" class="login-form">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required placeholder="tu@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Contraseña</label>
+                        <input type="password" id="password" name="password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-login">Iniciar Sesión</button>
+                    <div id="login-error" class="login-error" style="display: none;"></div>
+                </form>
             </div>
             <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             <script>
-                $('#login-form').on('submit', function(e) {
-                    e.preventDefault();
-                    var btn = $(this).find('button');
-                    btn.prop('disabled', true).text('Ingresando...');
-                    $('#login-error').hide();
-
-                    $.post('<?php echo admin_url('admin-ajax.php'); ?>', {
-                        action: 'rtt_seller_login',
-                        email: $('#email').val(),
-                        password: $('#password').val()
-                    }, function(response) {
-                        if (response.success) {
-                            window.location.href = response.data.redirect;
-                        } else {
-                            $('#login-error').text(response.data.message).show();
-                            btn.prop('disabled', false).text('Iniciar Sesión');
-                        }
-                    }).fail(function() {
-                        $('#login-error').text('Error de conexión').show();
-                        btn.prop('disabled', false).text('Iniciar Sesión');
-                    });
-                });
+                var rttAjax = { url: '<?php echo admin_url('admin-ajax.php'); ?>' };
             </script>
+            <script src="<?php echo RTT_RESERVAS_PLUGIN_URL; ?>assets/js/seller-panel.js?v=<?php echo RTT_RESERVAS_VERSION; ?>"></script>
         </body>
         </html>
         <?php
@@ -603,42 +652,85 @@ class RTT_Seller_Panel {
             'order' => 'DESC'
         ]);
 
-        $this->render_header('Dashboard');
+        $this->render_header('Dashboard', 'dashboard');
         ?>
-        <div class="dashboard">
-            <h1>Bienvenido, <?php echo esc_html($user->display_name); ?></h1>
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <h1 class="welcome-title">Bienvenido, <?php echo esc_html($user->display_name); ?></h1>
+            <p class="welcome-subtitle">Aquí tienes un resumen de tus cotizaciones</p>
+        </div>
 
-            <div class="stats-grid">
-                <div class="stat-card">
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
                     <div class="stat-number"><?php echo $stats['total']; ?></div>
                     <div class="stat-label">Total Cotizaciones</div>
                 </div>
-                <div class="stat-card stat-warning">
+            </div>
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">📝</div>
+                <div class="stat-content">
                     <div class="stat-number"><?php echo $stats['borradores']; ?></div>
                     <div class="stat-label">Borradores</div>
                 </div>
-                <div class="stat-card stat-info">
+            </div>
+            <div class="stat-card stat-info">
+                <div class="stat-icon">📧</div>
+                <div class="stat-content">
                     <div class="stat-number"><?php echo $stats['enviadas']; ?></div>
                     <div class="stat-label">Enviadas</div>
                 </div>
-                <div class="stat-card stat-success">
+            </div>
+            <div class="stat-card stat-success">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
                     <div class="stat-number"><?php echo $stats['aceptadas']; ?></div>
                     <div class="stat-label">Aceptadas</div>
                 </div>
             </div>
+        </div>
 
-            <div class="section">
-                <div class="section-header">
-                    <h2>Cotizaciones Recientes</h2>
-                    <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/nueva/'); ?>" class="btn btn-primary">+ Nueva Cotización</a>
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/nueva/'); ?>" class="quick-action-card">
+                <div class="quick-action-icon">➕</div>
+                <div class="quick-action-text">
+                    <h3>Nueva Cotización</h3>
+                    <p>Crear cotización para cliente</p>
                 </div>
+            </a>
+            <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/lista/'); ?>" class="quick-action-card secondary">
+                <div class="quick-action-icon">📋</div>
+                <div class="quick-action-text">
+                    <h3>Ver Todas</h3>
+                    <p>Gestionar mis cotizaciones</p>
+                </div>
+            </a>
+        </div>
 
-                <?php if (empty($cotizaciones['items'])): ?>
+        <!-- Recent Quotations -->
+        <div class="section-card">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span class="section-title-icon">📋</span>
+                    Cotizaciones Recientes
+                </h2>
+                <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/lista/'); ?>" class="btn btn-outline btn-sm">Ver todas</a>
+            </div>
+
+            <?php if (empty($cotizaciones['items'])): ?>
+            <div class="section-body">
                 <div class="empty-state">
-                    <p>No tienes cotizaciones aún.</p>
+                    <div class="empty-state-icon">📄</div>
+                    <h3>No tienes cotizaciones aún</h3>
+                    <p>Crea tu primera cotización para comenzar</p>
                     <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/nueva/'); ?>" class="btn btn-primary">Crear primera cotización</a>
                 </div>
-                <?php else: ?>
+            </div>
+            <?php else: ?>
+            <div class="section-body" style="padding: 0;">
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -654,21 +746,26 @@ class RTT_Seller_Panel {
                     <tbody>
                         <?php foreach ($cotizaciones['items'] as $cot): ?>
                         <tr>
-                            <td><strong><?php echo esc_html($cot->codigo); ?></strong></td>
-                            <td><?php echo esc_html($cot->cliente_nombre); ?></td>
-                            <td><?php echo esc_html(substr($cot->tour, 0, 30)); ?>...</td>
-                            <td><?php echo esc_html($cot->moneda); ?> <?php echo number_format($cot->precio_total, 2); ?></td>
+                            <td><span class="table-code"><?php echo esc_html($cot->codigo); ?></span></td>
+                            <td>
+                                <div class="table-client">
+                                    <span class="table-client-name"><?php echo esc_html($cot->cliente_nombre); ?></span>
+                                    <span class="table-client-email"><?php echo esc_html($cot->cliente_email); ?></span>
+                                </div>
+                            </td>
+                            <td><span class="table-tour"><?php echo esc_html(mb_substr($cot->tour, 0, 35)); ?><?php echo strlen($cot->tour) > 35 ? '...' : ''; ?></span></td>
+                            <td><span class="table-price"><?php echo esc_html($cot->moneda); ?> <?php echo number_format($cot->precio_total, 2); ?></span></td>
                             <td><span class="badge badge-<?php echo esc_attr($cot->estado); ?>"><?php echo esc_html(ucfirst($cot->estado)); ?></span></td>
                             <td><?php echo date_i18n('d/m/Y', strtotime($cot->fecha_creacion)); ?></td>
-                            <td>
-                                <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/editar/?id=' . $cot->id); ?>" class="btn btn-sm">Editar</a>
+                            <td class="table-actions">
+                                <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/editar/?id=' . $cot->id); ?>" class="btn btn-sm btn-outline">Editar</a>
                             </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-                <?php endif; ?>
             </div>
+            <?php endif; ?>
         </div>
         <?php
         $this->render_footer();
@@ -723,10 +820,10 @@ class RTT_Seller_Panel {
                                 <?php foreach ($tours as $tour):
                                     $tour_name = $tour['name'];
                                     $tour_price = floatval($tour['price'] ?? 0);
-                                    if ($tour_price <= 0) continue; // Solo mostrar tours con precio
+                                    $price_display = $tour_price > 0 ? ' - $' . number_format($tour_price, 0) : '';
                                 ?>
                                 <option value="<?php echo esc_attr($tour_name); ?>" data-price="<?php echo esc_attr($tour_price); ?>">
-                                    <?php echo esc_html($tour_name); ?> - $<?php echo number_format($tour_price, 0); ?>
+                                    <?php echo esc_html($tour_name); ?><?php echo $price_display; ?>
                                 </option>
                                 <?php endforeach; ?>
                             </select>
@@ -792,6 +889,62 @@ class RTT_Seller_Panel {
                     <div class="form-group">
                         <label for="validez_dias">Validez de la cotización (días)</label>
                         <input type="number" id="validez_dias" name="validez_dias" value="7" min="1" max="30">
+                    </div>
+                </div>
+
+                <div class="form-section costos-internos-section">
+                    <div class="costos-header">
+                        <div class="costos-header-icon">💰</div>
+                        <div class="costos-header-text">
+                            <h3>Costos Internos</h3>
+                            <span class="costos-header-badge">Privado</span>
+                        </div>
+                        <div class="tipo-cambio-mini">
+                            <label>T/C:</label>
+                            <input type="number" id="tipo_cambio" name="tipo_cambio" step="0.01" min="1" value="<?php echo esc_attr($options['tipo_cambio'] ?? '3.70'); ?>">
+                        </div>
+                    </div>
+
+                    <div class="costos-body">
+                        <div class="costos-list" id="costos-items">
+                            <div class="costo-item">
+                                <div class="costo-drag">⋮⋮</div>
+                                <input type="text" name="costo_concepto[]" placeholder="Ej: Guía, Transporte, Entradas..." class="costo-concepto">
+                                <div class="costo-monto-wrapper">
+                                    <span class="costo-prefix">$</span>
+                                    <input type="number" name="costo_monto[]" placeholder="0.00" min="0" step="0.01" class="costo-monto">
+                                </div>
+                                <button type="button" class="btn-remove-costo" title="Eliminar">×</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-add-costo-new" id="btn-add-costo">
+                            <span class="btn-add-icon">+</span> Agregar costo
+                        </button>
+                        <input type="hidden" id="costos_json" name="costos_json" value="">
+                    </div>
+
+                    <div class="costos-summary">
+                        <div class="summary-card summary-costo">
+                            <div class="summary-icon">📊</div>
+                            <div class="summary-content">
+                                <span class="summary-label">Costo Total</span>
+                                <span class="summary-value" id="costo_total_display">$ 0.00</span>
+                            </div>
+                        </div>
+                        <div class="summary-card summary-ganancia" id="ganancia-card">
+                            <div class="summary-icon">📈</div>
+                            <div class="summary-content">
+                                <span class="summary-label">Ganancia</span>
+                                <span class="summary-value-main" id="ganancia_usd">$ 0.00</span>
+                                <span class="summary-value-secondary" id="ganancia_pen">S/ 0.00</span>
+                            </div>
+                            <div class="summary-badge" id="ganancia_pct">0%</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="notas_internas">📝 Notas internas</label>
+                        <textarea id="notas_internas" name="notas_internas" rows="2" placeholder="Notas privadas (no aparecen en la cotización)..."></textarea>
                     </div>
                 </div>
 
@@ -866,10 +1019,10 @@ class RTT_Seller_Panel {
                                 <?php foreach ($tours as $tour):
                                     $tour_name = $tour['name'];
                                     $tour_price = floatval($tour['price'] ?? 0);
-                                    if ($tour_price <= 0) continue; // Solo mostrar tours con precio
+                                    $price_display = $tour_price > 0 ? ' - $' . number_format($tour_price, 0) : '';
                                 ?>
                                 <option value="<?php echo esc_attr($tour_name); ?>" data-price="<?php echo esc_attr($tour_price); ?>" <?php selected($cotizacion->tour, $tour_name); ?>>
-                                    <?php echo esc_html($tour_name); ?> - $<?php echo number_format($tour_price, 0); ?>
+                                    <?php echo esc_html($tour_name); ?><?php echo $price_display; ?>
                                 </option>
                                 <?php endforeach; ?>
                             </select>
@@ -935,6 +1088,73 @@ class RTT_Seller_Panel {
                     <div class="form-group">
                         <label for="validez_dias">Validez de la cotización (días)</label>
                         <input type="number" id="validez_dias" name="validez_dias" value="<?php echo esc_attr($cotizacion->validez_dias); ?>" min="1" max="30">
+                    </div>
+                </div>
+
+                <div class="form-section costos-internos-section">
+                    <div class="costos-header">
+                        <div class="costos-header-icon">💰</div>
+                        <div class="costos-header-text">
+                            <h3>Costos Internos</h3>
+                            <span class="costos-header-badge">Privado</span>
+                        </div>
+                        <div class="tipo-cambio-mini">
+                            <label>T/C:</label>
+                            <input type="number" id="tipo_cambio" name="tipo_cambio" step="0.01" min="1" value="<?php echo esc_attr($cotizacion->tipo_cambio ?? $options['tipo_cambio'] ?? '3.70'); ?>">
+                        </div>
+                    </div>
+
+                    <div class="costos-body">
+                        <div class="costos-list" id="costos-items">
+                            <?php
+                            $costos_guardados = [];
+                            if (!empty($cotizacion->costos_json)) {
+                                $costos_guardados = json_decode($cotizacion->costos_json, true) ?: [];
+                            }
+                            if (empty($costos_guardados)) {
+                                $costos_guardados = [['concepto' => '', 'monto' => '']];
+                            }
+                            foreach ($costos_guardados as $costo):
+                            ?>
+                            <div class="costo-item">
+                                <div class="costo-drag">⋮⋮</div>
+                                <input type="text" name="costo_concepto[]" placeholder="Ej: Guía, Transporte, Entradas..." class="costo-concepto" value="<?php echo esc_attr($costo['concepto'] ?? ''); ?>">
+                                <div class="costo-monto-wrapper">
+                                    <span class="costo-prefix">$</span>
+                                    <input type="number" name="costo_monto[]" placeholder="0.00" min="0" step="0.01" class="costo-monto" value="<?php echo esc_attr($costo['monto'] ?? ''); ?>">
+                                </div>
+                                <button type="button" class="btn-remove-costo" title="Eliminar">×</button>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <button type="button" class="btn-add-costo-new" id="btn-add-costo">
+                            <span class="btn-add-icon">+</span> Agregar costo
+                        </button>
+                        <input type="hidden" id="costos_json" name="costos_json" value="<?php echo esc_attr($cotizacion->costos_json ?? ''); ?>">
+                    </div>
+
+                    <div class="costos-summary">
+                        <div class="summary-card summary-costo">
+                            <div class="summary-icon">📊</div>
+                            <div class="summary-content">
+                                <span class="summary-label">Costo Total</span>
+                                <span class="summary-value" id="costo_total_display">$ 0.00</span>
+                            </div>
+                        </div>
+                        <div class="summary-card summary-ganancia" id="ganancia-card">
+                            <div class="summary-icon">📈</div>
+                            <div class="summary-content">
+                                <span class="summary-label">Ganancia</span>
+                                <span class="summary-value-main" id="ganancia_usd">$ 0.00</span>
+                                <span class="summary-value-secondary" id="ganancia_pen">S/ 0.00</span>
+                            </div>
+                            <div class="summary-badge" id="ganancia_pct">0%</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="notas_internas">📝 Notas internas</label>
+                        <textarea id="notas_internas" name="notas_internas" rows="2" placeholder="Notas privadas (no aparecen en la cotización)..."><?php echo esc_textarea($cotizacion->notas_internas ?? ''); ?></textarea>
                     </div>
                 </div>
 
@@ -1115,180 +1335,34 @@ class RTT_Seller_Panel {
 
     /**
      * Scripts del formulario de cotización
+     * Nota: La lógica principal está en assets/js/seller-panel.js
      */
     private function get_cotizacion_form_scripts() {
-        return "
-        function calcularTotal() {
-            var cantidad = parseInt($('#cantidad_pasajeros').val()) || 0;
-            var precio = parseFloat($('#precio_unitario').val()) || 0;
-            var descuento = parseFloat($('#descuento').val()) || 0;
-            var descuentoTipo = $('#descuento_tipo').val();
-
-            var subtotal = cantidad * precio;
-            var descuentoMonto = descuentoTipo === 'porcentaje' ? (subtotal * descuento / 100) : descuento;
-            var total = subtotal - descuentoMonto;
-
-            $('#subtotal').text(subtotal.toFixed(2));
-            $('#precio_total_display').text(total.toFixed(2));
-            $('#precio_total').val(total.toFixed(2));
-        }
-
-        // Auto-fill price when tour is selected
-        $('#tour').on('change', function() {
-            var selectedOption = $(this).find('option:selected');
-            var price = selectedOption.data('price');
-            if (price && parseFloat($('#precio_unitario').val()) == 0) {
-                $('#precio_unitario').val(price);
-                calcularTotal();
-            }
-        });
-
-        $('#cantidad_pasajeros, #precio_unitario, #descuento, #descuento_tipo').on('change input', calcularTotal);
-        calcularTotal();
-
-        // Preview PDF button
-        $('.btn-preview-pdf').on('click', function() {
-            var id = $('input[name=id]').val();
-            if (!id || id == '0') {
-                alert('Primero guarda la cotización para poder previsualizar el PDF');
-                return;
-            }
-            window.open(rttAjax.url + '?action=rtt_preview_cotizacion_pdf&id=' + id, '_blank');
-        });
-
-        $('#cotizacion-form').on('submit', function(e) {
-            e.preventDefault();
-            var form = $(this);
-            var submitBtn = form.find('button[type=submit]:focus');
-            if (!submitBtn.length) submitBtn = form.find('button[type=submit]:first');
-            var action = submitBtn.val() || 'guardar';
-            var btnText = submitBtn.text();
-
-            submitBtn.prop('disabled', true).text('Procesando...');
-            $('#form-message').hide();
-
-            var formData = form.serialize();
-
-            $.post(rttAjax.url, formData + '&action=rtt_save_cotizacion', function(response) {
-                if (response.success) {
-                    if (action === 'enviar' && response.data.id) {
-                        // Enviar después de guardar
-                        $.post(rttAjax.url, {
-                            action: 'rtt_send_cotizacion',
-                            id: response.data.id
-                        }, function(sendResponse) {
-                            if (sendResponse.success) {
-                                $('#form-message').removeClass('error').addClass('success')
-                                    .html('<strong>✓ ENVIADO</strong><br>Cotización enviada exitosamente a: ' + $('#cliente_email').val()).show();
-                                // Scroll to message
-                                $('html, body').animate({ scrollTop: $('#form-message').offset().top - 100 }, 500);
-                                setTimeout(function() {
-                                    window.location.href = '" . home_url('/' . self::PAGE_SLUG . '/') . "';
-                                }, 3000);
-                            } else {
-                                $('#form-message').removeClass('success').addClass('error')
-                                    .text('Guardada pero error al enviar: ' + sendResponse.data.message).show();
-                            }
-                            submitBtn.prop('disabled', false).text(btnText);
-                        });
-                    } else {
-                        $('#form-message').removeClass('error').addClass('success')
-                            .text(response.data.message).show();
-                        if (response.data.id) {
-                            $('input[name=id]').val(response.data.id);
-                            // Enable preview PDF button after saving
-                            $('.btn-preview-pdf').removeClass('disabled');
-                        }
-                        submitBtn.prop('disabled', false).text(btnText);
-                    }
-                } else {
-                    $('#form-message').removeClass('success').addClass('error')
-                        .text(response.data.message).show();
-                    submitBtn.prop('disabled', false).text(btnText);
-                }
-            }).fail(function() {
-                $('#form-message').removeClass('success').addClass('error')
-                    .text('Error de conexión').show();
-                submitBtn.prop('disabled', false).text(btnText);
-            });
-        });
-        ";
+        // Scripts manejados por seller-panel.js
+        return "";
     }
 
     /**
-     * Estilos de login
+     * Estilos de login (obsoleto - usar assets/css/seller-panel.css)
+     * @deprecated
      */
     private function get_login_styles() {
-        return "
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #004070 0%, #27AE60 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .login-container { width: 100%; max-width: 400px; padding: 20px; }
-        .login-box {
-            background: white;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        .login-header { text-align: center; margin-bottom: 30px; }
-        .brand-icon {
-            display: inline-block;
-            background: linear-gradient(135deg, #004070, #27AE60);
-            color: white;
-            font-weight: 700;
-            font-size: 24px;
-            padding: 15px 25px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-        }
-        .login-header h1 { font-size: 24px; color: #333; margin-bottom: 5px; }
-        .login-header p { color: #666; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #333; }
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-        .form-group input:focus { outline: none; border-color: #27AE60; }
-        .btn-login {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #004070, #27AE60);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(39,174,96,0.4); }
-        .btn-login:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
-        .error-message {
-            margin-top: 15px;
-            padding: 12px;
-            background: #fee;
-            color: #c00;
-            border-radius: 8px;
-            text-align: center;
-        }
-        ";
+        return "";
     }
 
     /**
-     * Estilos del panel
+     * Estilos del panel (obsoleto - usar assets/css/seller-panel.css)
+     * @deprecated
      */
     private function get_panel_styles() {
+        return ""; // Estilos movidos a archivo externo
+    }
+
+    /**
+     * LEGACY STYLES - TODO: Eliminar en siguiente versión
+     * Mantenido temporalmente por compatibilidad
+     */
+    private function get_panel_styles_legacy() {
         return "
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', sans-serif; background: #f5f7fa; min-height: 100vh; }
@@ -1504,22 +1578,247 @@ class RTT_Seller_Panel {
         .badge-success { background: #27ae60; color: white; }
         .badge-danger { background: #e74c3c; color: white; }
 
+        /* Costos Internos - Nuevo diseño */
+        .costos-internos-section {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: none;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .costos-header {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            gap: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .costos-header-icon {
+            font-size: 32px;
+            filter: grayscale(0);
+        }
+        .costos-header-text h3 {
+            margin: 0;
+            color: white;
+            font-size: 18px;
+        }
+        .costos-header-badge {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .tipo-cambio-mini {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+        .tipo-cambio-mini label {
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+            margin: 0;
+        }
+        .tipo-cambio-mini input {
+            width: 70px;
+            padding: 5px 8px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.9);
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .costos-body {
+            padding: 20px;
+        }
+        .costos-list {
+            margin-bottom: 15px;
+        }
+        .costo-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+        .costo-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .costo-drag {
+            color: rgba(255,255,255,0.3);
+            cursor: grab;
+            font-size: 14px;
+            padding: 0 5px;
+        }
+        .costo-item .costo-concepto {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.95);
+            font-size: 14px;
+        }
+        .costo-monto-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.95);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            overflow: hidden;
+        }
+        .costo-prefix {
+            padding: 10px 8px 10px 12px;
+            color: #666;
+            font-weight: 600;
+        }
+        .costo-item .costo-monto {
+            width: 90px;
+            padding: 10px 12px 10px 0;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .btn-remove-costo {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: none;
+            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+        .btn-remove-costo:hover {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-add-costo-new {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255,255,255,0.1);
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 10px;
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-add-costo-new:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.4);
+            color: white;
+        }
+        .btn-add-icon {
+            font-size: 20px;
+            font-weight: 300;
+        }
+
+        /* Summary Cards */
+        .costos-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 0 20px 20px;
+        }
+        .summary-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .summary-icon {
+            font-size: 28px;
+        }
+        .summary-content {
+            flex: 1;
+        }
+        .summary-label {
+            display: block;
+            color: rgba(255,255,255,0.6);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .summary-value {
+            display: block;
+            color: white;
+            font-size: 22px;
+            font-weight: 700;
+        }
+        .summary-ganancia {
+            background: linear-gradient(135deg, rgba(39, 174, 96, 0.2) 0%, rgba(39, 174, 96, 0.1) 100%);
+            position: relative;
+        }
+        .summary-value-main {
+            display: block;
+            color: #2ecc71;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .summary-value-secondary {
+            display: block;
+            color: rgba(255,255,255,0.5);
+            font-size: 13px;
+        }
+        .summary-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #2ecc71;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .summary-ganancia.negative .summary-value-main { color: #e74c3c; }
+        .summary-ganancia.negative .summary-badge { background: #e74c3c; }
+        .summary-ganancia.warning .summary-value-main { color: #f39c12; }
+        .summary-ganancia.warning .summary-badge { background: #f39c12; }
+
+        .costos-internos-section .form-group label {
+            color: rgba(255,255,255,0.8);
+        }
+        .costos-internos-section textarea {
+            background: rgba(255,255,255,0.95);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
         @media (max-width: 768px) {
             .navbar { padding: 0 15px; }
             .nav-menu { display: none; }
             .main-content { padding: 15px; }
             .form-row { grid-template-columns: 1fr; }
+            .costos-header { flex-wrap: wrap; }
+            .tipo-cambio-mini { width: 100%; margin-top: 10px; justify-content: center; }
+            .costos-summary { grid-template-columns: 1fr; }
+            .costo-drag { display: none; }
         }
         ";
     }
 
     /**
-     * Scripts generales del panel
+     * Scripts generales del panel (obsoleto - usar assets/js/seller-panel.js)
+     * @deprecated
      */
     private function get_panel_scripts() {
-        return "<script>
-            // Scripts generales si necesarios
-        </script>";
+        return ""; // Scripts movidos a archivo externo
     }
 
     /**
@@ -1541,6 +1840,20 @@ class RTT_Seller_Panel {
             <h1>Configuración de Cotizaciones</h1>
 
             <form id="config-form" class="cotizacion-form">
+                <div class="form-section">
+                    <h3>Tipo de Cambio</h3>
+                    <p class="section-description">Tipo de cambio USD → PEN para cálculo de ganancias.</p>
+                    <div class="form-row">
+                        <div class="form-group" style="max-width: 200px;">
+                            <label for="tipo_cambio">1 USD =</label>
+                            <div class="input-group">
+                                <input type="number" id="tipo_cambio" name="tipo_cambio" step="0.01" min="1" value="<?php echo esc_attr($options['tipo_cambio'] ?? '3.70'); ?>">
+                                <span style="padding: 10px; background: #f5f5f5; border-radius: 0 6px 6px 0; border: 1px solid #ddd; border-left: 0;">PEN</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-section">
                     <h3>Formas de Pago</h3>
                     <p class="section-description">Esta información aparecerá en los PDFs de cotización.</p>

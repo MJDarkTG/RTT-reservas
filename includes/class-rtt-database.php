@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 
 class RTT_Database {
 
-    const DB_VERSION = '1.7';
+    const DB_VERSION = '1.10';
 
     /**
      * Crear tablas en la base de datos
@@ -112,6 +112,17 @@ class RTT_Database {
             formas_pago text,
             moneda varchar(10) DEFAULT 'USD',
             validez_dias int(11) DEFAULT 7,
+            guia_id bigint(20) UNSIGNED DEFAULT NULL,
+            guia_nombre varchar(255) DEFAULT NULL,
+            costo_guia decimal(10,2) DEFAULT 0,
+            costo_transporte decimal(10,2) DEFAULT 0,
+            costo_entradas decimal(10,2) DEFAULT 0,
+            otros_costos decimal(10,2) DEFAULT 0,
+            costo_total decimal(10,2) DEFAULT 0,
+            ganancia decimal(10,2) DEFAULT 0,
+            costos_json text,
+            tipo_cambio decimal(5,2) DEFAULT 3.70,
+            notas_internas text,
             estado varchar(20) NOT NULL DEFAULT 'borrador',
             enviada_at datetime DEFAULT NULL,
             aceptada_at datetime DEFAULT NULL,
@@ -822,6 +833,11 @@ class RTT_Database {
         $table = $wpdb->prefix . 'rtt_cotizaciones';
         $codigo = self::generate_cotizacion_codigo();
 
+        // Calcular costos y ganancia
+        $costo_total = floatval($data['costo_total'] ?? 0);
+        $precio_total = floatval($data['precio_total']);
+        $ganancia = $precio_total - $costo_total;
+
         $result = $wpdb->insert($table, [
             'codigo' => $codigo,
             'vendedor_id' => intval($data['vendedor_id']),
@@ -833,7 +849,7 @@ class RTT_Database {
             'fecha_tour' => sanitize_text_field($data['fecha_tour']),
             'cantidad_pasajeros' => intval($data['cantidad_pasajeros']),
             'precio_unitario' => floatval($data['precio_unitario']),
-            'precio_total' => floatval($data['precio_total']),
+            'precio_total' => $precio_total,
             'descuento' => floatval($data['descuento'] ?? 0),
             'descuento_tipo' => sanitize_text_field($data['descuento_tipo'] ?? 'porcentaje'),
             'notas' => sanitize_textarea_field($data['notas'] ?? ''),
@@ -841,6 +857,11 @@ class RTT_Database {
             'formas_pago' => wp_kses_post($data['formas_pago'] ?? ''),
             'moneda' => sanitize_text_field($data['moneda'] ?? 'USD'),
             'validez_dias' => intval($data['validez_dias'] ?? 7),
+            'costos_json' => $data['costos_json'] ?? '[]',
+            'costo_total' => $costo_total,
+            'ganancia' => $ganancia,
+            'tipo_cambio' => floatval($data['tipo_cambio'] ?? 3.70),
+            'notas_internas' => sanitize_textarea_field($data['notas_internas'] ?? ''),
             'estado' => 'borrador',
         ]);
 
@@ -881,6 +902,11 @@ class RTT_Database {
             'formas_pago' => '%s',
             'moneda' => '%s',
             'validez_dias' => '%d',
+            'costos_json' => '%s',
+            'costo_total' => '%f',
+            'ganancia' => '%f',
+            'tipo_cambio' => '%f',
+            'notas_internas' => '%s',
             'estado' => '%s',
         ];
 
@@ -888,6 +914,16 @@ class RTT_Database {
             if (isset($data[$field])) {
                 $update_data[$field] = $data[$field];
                 $format[] = $fmt;
+            }
+        }
+
+        // Recalcular ganancia si se actualiza costo_total o precio_total
+        if (isset($data['costo_total']) || isset($data['precio_total'])) {
+            $costo_total = floatval($data['costo_total'] ?? 0);
+
+            if (isset($data['precio_total'])) {
+                $update_data['ganancia'] = floatval($data['precio_total']) - $costo_total;
+                $format[] = '%f';
             }
         }
 

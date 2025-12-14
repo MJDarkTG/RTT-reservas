@@ -3,7 +3,7 @@
  * Plugin Name: RTT Reservas
  * Plugin URI: https://readytotravelperu.com
  * Description: Tour booking system with wizard form, PDF generation and email notifications.
- * Version: 1.8.0
+ * Version: 1.9.2
  * Author: Ready To Travel Peru
  * Author URI: https://readytotravelperu.com
  * Text Domain: rtt-reservas
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Definir constantes del plugin
-define('RTT_RESERVAS_VERSION', '1.8.0');
+define('RTT_RESERVAS_VERSION', '1.9.2');
 define('RTT_RESERVAS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RTT_RESERVAS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('RTT_RESERVAS_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -185,6 +185,33 @@ final class RTT_Reservas {
             wp_schedule_event(time(), 'daily', 'rtt_cleanup_tracking');
         }
         add_action('rtt_cleanup_tracking', ['RTT_Database', 'cleanup_old_tracking']);
+
+        // Cron para limpieza de PDFs temporales (cada 6 horas)
+        if (!wp_next_scheduled('rtt_cleanup_temp_pdfs')) {
+            wp_schedule_event(time(), 'twicedaily', 'rtt_cleanup_temp_pdfs');
+        }
+        add_action('rtt_cleanup_temp_pdfs', [$this, 'cleanup_temp_pdfs']);
+    }
+
+    /**
+     * Limpiar PDFs temporales (más de 1 hora de antigüedad)
+     */
+    public function cleanup_temp_pdfs() {
+        $upload_dir = wp_upload_dir();
+        $temp_dir = $upload_dir['basedir'] . '/rtt-temp/';
+
+        if (!is_dir($temp_dir)) {
+            return;
+        }
+
+        $files = glob($temp_dir . '*.pdf');
+        $max_age = 3600; // 1 hora
+
+        foreach ($files as $file) {
+            if (is_file($file) && (time() - filemtime($file)) > $max_age) {
+                @unlink($file);
+            }
+        }
     }
 
     /**
