@@ -453,7 +453,7 @@ class RTT_Seller_Panel {
     /**
      * Footer común del panel
      */
-    private function render_footer() {
+    private function render_footer($extra_scripts = '') {
         ?>
             </main>
             <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -462,6 +462,13 @@ class RTT_Seller_Panel {
                     url: '<?php echo admin_url('admin-ajax.php'); ?>'
                 };
             </script>
+            <?php if (!empty($extra_scripts)): ?>
+            <script>
+                jQuery(document).ready(function($) {
+                    <?php echo $extra_scripts; ?>
+                });
+            </script>
+            <?php endif; ?>
             <?php echo $this->get_panel_scripts(); ?>
         </body>
         </html>
@@ -745,12 +752,8 @@ class RTT_Seller_Panel {
                 <div id="form-message" class="form-message" style="display: none;"></div>
             </form>
         </div>
-
-        <script>
-            <?php echo $this->get_cotizacion_form_scripts(); ?>
-        </script>
         <?php
-        $this->render_footer();
+        $this->render_footer($this->get_cotizacion_form_scripts());
     }
 
     /**
@@ -888,11 +891,8 @@ class RTT_Seller_Panel {
             </form>
         </div>
 
-        <script>
-            <?php echo $this->get_cotizacion_form_scripts(); ?>
-        </script>
         <?php
-        $this->render_footer();
+        $this->render_footer($this->get_cotizacion_form_scripts());
     }
 
     /**
