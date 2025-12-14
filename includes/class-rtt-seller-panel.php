@@ -710,11 +710,11 @@ class RTT_Seller_Panel {
                                 <option value="">Seleccionar tour...</option>
                                 <?php foreach ($tours as $tour):
                                     $tour_name = $tour['name'];
-                                    $tour_price = $tour['price'] ?? 0;
-                                    $tour_duration = $tour['duration'] ?? '';
+                                    $tour_price = floatval($tour['price'] ?? 0);
+                                    if ($tour_price <= 0) continue; // Solo mostrar tours con precio
                                 ?>
                                 <option value="<?php echo esc_attr($tour_name); ?>" data-price="<?php echo esc_attr($tour_price); ?>">
-                                    <?php echo esc_html($tour_name); ?> - $<?php echo number_format($tour_price, 0); ?> (<?php echo esc_html($tour_duration); ?>)
+                                    <?php echo esc_html($tour_name); ?> - $<?php echo number_format($tour_price, 0); ?>
                                 </option>
                                 <?php endforeach; ?>
                             </select>
@@ -853,11 +853,11 @@ class RTT_Seller_Panel {
                                 <option value="">Seleccionar tour...</option>
                                 <?php foreach ($tours as $tour):
                                     $tour_name = $tour['name'];
-                                    $tour_price = $tour['price'] ?? 0;
-                                    $tour_duration = $tour['duration'] ?? '';
+                                    $tour_price = floatval($tour['price'] ?? 0);
+                                    if ($tour_price <= 0) continue; // Solo mostrar tours con precio
                                 ?>
                                 <option value="<?php echo esc_attr($tour_name); ?>" data-price="<?php echo esc_attr($tour_price); ?>" <?php selected($cotizacion->tour, $tour_name); ?>>
-                                    <?php echo esc_html($tour_name); ?> - $<?php echo number_format($tour_price, 0); ?> (<?php echo esc_html($tour_duration); ?>)
+                                    <?php echo esc_html($tour_name); ?> - $<?php echo number_format($tour_price, 0); ?>
                                 </option>
                                 <?php endforeach; ?>
                             </select>
