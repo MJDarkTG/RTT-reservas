@@ -878,9 +878,9 @@ body {
 
 /* Override form-section defaults for costos */
 .form-section.costos-internos-section {
-    background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darker) 100%);
-    border: none;
-    border-bottom: none;
+    background: linear-gradient(135deg, #f0f4f8 0%, #e8eef5 100%);
+    border: 2px solid #d0dbe8;
+    border-bottom: 2px solid #d0dbe8;
     border-radius: var(--radius-lg);
     overflow: hidden;
     margin-top: 30px;
@@ -896,11 +896,15 @@ body {
     align-items: center;
     padding: 20px 25px;
     gap: 15px;
-    border-bottom: 1px solid var(--border-dark);
+    border-bottom: 1px solid #d0dbe8;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
 }
 
 .costos-header-icon {
-    font-size: 32px;
+    font-size: 28px;
+    background: rgba(255,255,255,0.15);
+    padding: 8px;
+    border-radius: var(--radius-sm);
 }
 
 .costos-header-text h3 {
@@ -916,8 +920,8 @@ body {
 }
 
 .costos-header-badge {
-    background: rgba(231, 76, 60, 0.2);
-    color: var(--danger);
+    background: rgba(255,255,255,0.2);
+    color: white;
     padding: 4px 12px;
     border-radius: 15px;
     font-size: 11px;
@@ -931,15 +935,16 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.2);
     padding: 10px 15px;
     border-radius: var(--radius-sm);
 }
 
 .tipo-cambio-mini label {
-    color: rgba(255,255,255,0.7);
+    color: rgba(255,255,255,0.9);
     font-size: 13px;
     margin: 0;
+    font-weight: 500;
 }
 
 .tipo-cambio-mini input {
@@ -954,6 +959,7 @@ body {
 
 .costos-body {
     padding: 25px;
+    background: linear-gradient(135deg, #f0f4f8 0%, #e8eef5 100%);
 }
 
 .costos-list {
@@ -964,19 +970,22 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: rgba(255,255,255,0.05);
+    background: white;
     padding: 12px 15px;
     border-radius: var(--radius-md);
     margin-bottom: 10px;
     transition: var(--transition);
+    border: 1px solid #d0dbe8;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
 }
 
 .costo-item:hover {
-    background: rgba(255,255,255,0.1);
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(0,64,112,0.1);
 }
 
 .costo-drag {
-    color: rgba(255,255,255,0.3);
+    color: #b0bec5;
     cursor: grab;
     font-size: 16px;
     padding: 0 5px;
@@ -985,24 +994,34 @@ body {
 .costo-item .costo-concepto {
     flex: 1;
     padding: 12px 15px;
-    border: 2px solid rgba(255,255,255,0.15);
+    border: 2px solid var(--border-light);
     border-radius: var(--radius-sm);
-    background: white;
+    background: #fafbfc;
     font-size: 14px;
+}
+
+.costo-item .costo-concepto:focus {
+    border-color: var(--primary);
+    background: white;
 }
 
 .costo-monto-wrapper {
     display: flex;
     align-items: center;
-    background: white;
+    background: #fafbfc;
     border-radius: var(--radius-sm);
-    border: 2px solid rgba(255,255,255,0.15);
+    border: 2px solid var(--border-light);
     overflow: hidden;
+}
+
+.costo-monto-wrapper:focus-within {
+    border-color: var(--primary);
+    background: white;
 }
 
 .costo-prefix {
     padding: 12px 10px 12px 15px;
-    color: var(--text-secondary);
+    color: var(--primary);
     font-weight: 700;
 }
 
@@ -1016,7 +1035,7 @@ body {
 }
 
 .btn-remove-costo {
-    background: rgba(231, 76, 60, 0.2);
+    background: rgba(231, 76, 60, 0.1);
     color: var(--danger);
     border: none;
     border-radius: var(--radius-sm);
@@ -1035,12 +1054,12 @@ body {
 .btn-add-costo-new {
     width: 100%;
     padding: 15px;
-    background: rgba(255,255,255,0.08);
-    border: 2px dashed rgba(255,255,255,0.2);
+    background: white;
+    border: 2px dashed #c0d0e0;
     border-radius: var(--radius-md);
-    color: rgba(255,255,255,0.7);
+    color: var(--primary);
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: var(--transition);
     display: flex;
@@ -1050,8 +1069,8 @@ body {
 }
 
 .btn-add-costo-new:hover {
-    background: rgba(255,255,255,0.12);
-    border-color: rgba(255,255,255,0.4);
+    background: var(--primary);
+    border-color: var(--primary);
     color: white;
 }
 
@@ -1065,20 +1084,30 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
-    padding: 0 25px 25px;
+    padding: 20px 25px 25px;
+    background: linear-gradient(135deg, #f0f4f8 0%, #e8eef5 100%);
 }
 
 .summary-card {
-    background: rgba(255,255,255,0.05);
+    background: white;
     border-radius: var(--radius-md);
     padding: 20px;
     display: flex;
     align-items: center;
     gap: 15px;
+    border: 1px solid #d0dbe8;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.summary-card.summary-costo {
+    border-left: 4px solid var(--primary);
 }
 
 .summary-icon {
-    font-size: 32px;
+    font-size: 28px;
+    background: #f0f4f8;
+    padding: 10px;
+    border-radius: var(--radius-sm);
 }
 
 .summary-content {
@@ -1087,36 +1116,39 @@ body {
 
 .summary-label {
     display: block;
-    color: rgba(255,255,255,0.5);
-    font-size: 12px;
+    color: var(--text-muted);
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 5px;
+    font-weight: 600;
 }
 
 .summary-value {
     display: block;
-    color: white;
-    font-size: 26px;
+    color: var(--primary);
+    font-size: 24px;
     font-weight: 800;
 }
 
 .summary-ganancia {
-    background: linear-gradient(135deg, rgba(39, 174, 96, 0.15) 0%, rgba(39, 174, 96, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(39, 174, 96, 0.08) 0%, rgba(39, 174, 96, 0.02) 100%);
+    border: 1px solid rgba(39, 174, 96, 0.3);
+    border-left: 4px solid var(--success);
     position: relative;
 }
 
 .summary-value-main {
     display: block;
-    color: #2ecc71;
-    font-size: 28px;
+    color: var(--success);
+    font-size: 24px;
     font-weight: 800;
 }
 
 .summary-value-secondary {
     display: block;
-    color: rgba(255,255,255,0.5);
-    font-size: 14px;
+    color: var(--text-muted);
+    font-size: 13px;
     margin-top: 3px;
 }
 
@@ -1124,26 +1156,49 @@ body {
     position: absolute;
     top: 12px;
     right: 12px;
-    background: #2ecc71;
+    background: var(--success);
     color: white;
     padding: 5px 12px;
     border-radius: 20px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
 }
 
+.summary-ganancia.negative {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.08) 0%, rgba(231, 76, 60, 0.02) 100%);
+    border-color: rgba(231, 76, 60, 0.3);
+    border-left-color: var(--danger);
+}
 .summary-ganancia.negative .summary-value-main { color: var(--danger); }
 .summary-ganancia.negative .summary-badge { background: var(--danger); }
+
+.summary-ganancia.warning {
+    background: linear-gradient(135deg, rgba(243, 156, 18, 0.08) 0%, rgba(243, 156, 18, 0.02) 100%);
+    border-color: rgba(243, 156, 18, 0.3);
+    border-left-color: var(--warning);
+}
 .summary-ganancia.warning .summary-value-main { color: var(--warning); }
 .summary-ganancia.warning .summary-badge { background: var(--warning); }
 
+/* Notas internas section inside costos */
+.costos-internos-section .form-group {
+    padding: 0 25px 25px;
+    margin: 0;
+    background: linear-gradient(135deg, #f0f4f8 0%, #e8eef5 100%);
+}
+
 .costos-internos-section .form-group label {
-    color: rgba(255,255,255,0.8);
+    color: var(--text-primary);
+    font-weight: 600;
 }
 
 .costos-internos-section textarea {
     background: white;
-    border: 2px solid rgba(255,255,255,0.15);
+    border: 2px solid #d0dbe8;
+}
+
+.costos-internos-section textarea:focus {
+    border-color: var(--primary);
 }
 
 /* ========================================
