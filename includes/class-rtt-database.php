@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 
 class RTT_Database {
 
-    const DB_VERSION = '1.6';
+    const DB_VERSION = '1.7';
 
     /**
      * Crear tablas en la base de datos
@@ -126,11 +126,31 @@ class RTT_Database {
             KEY fecha_tour (fecha_tour)
         ) $charset_collate;";
 
+        // Tabla de proveedores
+        $table_proveedores = $wpdb->prefix . 'rtt_proveedores';
+        $sql_proveedores = "CREATE TABLE $table_proveedores (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            tipo varchar(50) NOT NULL,
+            nombre varchar(255) NOT NULL,
+            contacto varchar(255) DEFAULT NULL,
+            telefono varchar(50) DEFAULT NULL,
+            email varchar(100) DEFAULT NULL,
+            costo_base decimal(10,2) DEFAULT 0,
+            moneda varchar(10) DEFAULT 'PEN',
+            notas text,
+            activo tinyint(1) DEFAULT 1,
+            fecha_creacion datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY tipo (tipo),
+            KEY activo (activo)
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_reservas);
         dbDelta($sql_pasajeros);
         dbDelta($sql_tracking);
         dbDelta($sql_cotizaciones);
+        dbDelta($sql_proveedores);
 
         // Agregar índice de tour si no existe (para instalaciones existentes)
         self::maybe_add_tour_index();
@@ -1040,5 +1060,160 @@ class RTT_Database {
             'vencidas' => intval($result->vencidas ?? 0),
             'total_aceptado' => floatval($result->total_aceptado ?? 0),
         ];
+    }
+
+    // ==========================================
+    // PROVEEDORES
+    // ==========================================
+
+    /**
+     * Tipos de proveedores predefinidos
+     */
+    public static function get_tipos_proveedores() {
+        return [
+            'guia' => 'Guía',
+            'transporte' => 'Transporte',
+            'hotel' => 'Hotel',
+            'restaurante' => 'Restaurante',
+            'entrada' => 'Entradas',
+            'otro' => 'Otro',
+        ];
+    }
+
+    /**
+     * Insertar proveedor
+     */
+    public static function insert_proveedor($data) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_proveedores';
+
+        $result = $wpdb->insert($table, [
+            'tipo' => sanitize_text_field($data['tipo']),
+            'nombre' => sanitize_text_field($data['nombre']),
+            'contacto' => sanitize_text_field($data['contacto'] ?? ''),
+            'telefono' => sanitize_text_field($data['telefono'] ?? ''),
+            'email' => sanitize_email($data['email'] ?? ''),
+            'costo_base' => floatval($data['costo_base'] ?? 0),
+            'moneda' => sanitize_text_field($data['moneda'] ?? 'PEN'),
+            'notas' => sanitize_textarea_field($data['notas'] ?? ''),
+            'activo' => isset($data['activo']) ? intval($data['activo']) : 1,
+        ]);
+
+        if ($result === false) {
+            return new WP_Error('db_error', 'Error al guardar el proveedor');
+        }
+
+        return $wpdb->insert_id;
+    }
+
+    /**
+     * Actualizar proveedor
+     */
+    public static function update_proveedor($id, $data) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_proveedores';
+
+        $update_data = [];
+        $format = [];
+
+        $fields = [
+            'tipo' => '%s',
+            'nombre' => '%s',
+            'contacto' => '%s',
+            'telefono' => '%s',
+            'email' => '%s',
+            'costo_base' => '%f',
+            'moneda' => '%s',
+            'notas' => '%s',
+            'activo' => '%d',
+        ];
+
+        foreach ($fields as $field => $fmt) {
+            if (isset($data[$field])) {
+                $update_data[$field] = $data[$field];
+                $format[] = $fmt;
+            }
+        }
+
+        if (empty($update_data)) {
+            return false;
+        }
+
+        return $wpdb->update($table, $update_data, ['id' => $id], $format, ['%d']) !== false;
+    }
+
+    /**
+     * Obtener proveedor por ID
+     */
+    public static function get_proveedor($id) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_proveedores';
+        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $id));
+    }
+
+    /**
+     * Obtener proveedores con filtros
+     */
+    public static function get_proveedores($args = []) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_proveedores';
+
+        $defaults = [
+            'tipo' => '',
+            'activo' => null,
+            'buscar' => '',
+            'orderby' => 'nombre',
+            'order' => 'ASC'
+        ];
+
+        $args = wp_parse_args($args, $defaults);
+
+        $where = '1=1';
+        $values = [];
+
+        if (!empty($args['tipo'])) {
+            $where .= ' AND tipo = %s';
+            $values[] = $args['tipo'];
+        }
+
+        if ($args['activo'] !== null) {
+            $where .= ' AND activo = %d';
+            $values[] = $args['activo'];
+        }
+
+        if (!empty($args['buscar'])) {
+            $where .= ' AND (nombre LIKE %s OR contacto LIKE %s)';
+            $search = '%' . $wpdb->esc_like($args['buscar']) . '%';
+            $values[] = $search;
+            $values[] = $search;
+        }
+
+        $orderby = in_array($args['orderby'], ['nombre', 'tipo', 'costo_base', 'fecha_creacion'])
+            ? $args['orderby'] : 'nombre';
+        $order = strtoupper($args['order']) === 'DESC' ? 'DESC' : 'ASC';
+
+        $sql = "SELECT * FROM $table WHERE $where ORDER BY $orderby $order";
+
+        if (!empty($values)) {
+            $sql = $wpdb->prepare($sql, $values);
+        }
+
+        return $wpdb->get_results($sql);
+    }
+
+    /**
+     * Obtener proveedores por tipo
+     */
+    public static function get_proveedores_by_tipo($tipo) {
+        return self::get_proveedores(['tipo' => $tipo, 'activo' => 1]);
+    }
+
+    /**
+     * Eliminar proveedor
+     */
+    public static function delete_proveedor($id) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_proveedores';
+        return $wpdb->delete($table, ['id' => $id], ['%d']);
     }
 }

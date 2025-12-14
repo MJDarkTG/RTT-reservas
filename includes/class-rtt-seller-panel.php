@@ -42,6 +42,10 @@ class RTT_Seller_Panel {
         add_action('wp_ajax_rtt_delete_cotizacion', [$this, 'ajax_delete_cotizacion']);
         add_action('wp_ajax_rtt_get_cotizacion', [$this, 'ajax_get_cotizacion']);
         add_action('wp_ajax_rtt_preview_cotizacion_pdf', [$this, 'ajax_preview_pdf']);
+        add_action('wp_ajax_rtt_save_configuracion', [$this, 'ajax_save_configuracion']);
+        add_action('wp_ajax_rtt_save_proveedor', [$this, 'ajax_save_proveedor']);
+        add_action('wp_ajax_rtt_delete_proveedor', [$this, 'ajax_delete_proveedor']);
+        add_action('wp_ajax_rtt_get_proveedores', [$this, 'ajax_get_proveedores']);
     }
 
     /**
@@ -119,6 +123,12 @@ class RTT_Seller_Panel {
                 break;
             case 'lista':
                 $this->render_lista_cotizaciones();
+                break;
+            case 'configuracion':
+                $this->render_configuracion();
+                break;
+            case 'proveedores':
+                $this->render_proveedores();
                 break;
             case 'logout':
                 wp_logout();
@@ -474,6 +484,8 @@ class RTT_Seller_Panel {
                     <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/'); ?>" class="nav-link">Dashboard</a>
                     <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/nueva/'); ?>" class="nav-link">Nueva Cotización</a>
                     <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/lista/'); ?>" class="nav-link">Mis Cotizaciones</a>
+                    <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/proveedores/'); ?>" class="nav-link">Proveedores</a>
+                    <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/configuracion/'); ?>" class="nav-link">⚙️</a>
                 </div>
                 <div class="nav-user">
                     <span><?php echo esc_html($user->display_name); ?></span>
@@ -1428,6 +1440,70 @@ class RTT_Seller_Panel {
         .actions { white-space: nowrap; }
         .actions .btn { margin-right: 5px; }
 
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .modal-header h2 { margin: 0; }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        /* Large textarea */
+        .large-textarea {
+            width: 100%;
+            font-family: monospace;
+            font-size: 13px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .section-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        /* Badges extra */
+        .badge-guia { background: #3498db; color: white; }
+        .badge-transporte { background: #e67e22; color: white; }
+        .badge-hotel { background: #9b59b6; color: white; }
+        .badge-restaurante { background: #e74c3c; color: white; }
+        .badge-entrada { background: #1abc9c; color: white; }
+        .badge-otro { background: #95a5a6; color: white; }
+        .badge-success { background: #27ae60; color: white; }
+        .badge-danger { background: #e74c3c; color: white; }
+
         @media (max-width: 768px) {
             .navbar { padding: 0 15px; }
             .nav-menu { display: none; }
@@ -1444,5 +1520,395 @@ class RTT_Seller_Panel {
         return "<script>
             // Scripts generales si necesarios
         </script>";
+    }
+
+    /**
+     * Página de Configuración
+     */
+    private function render_configuracion() {
+        // Solo admin puede acceder a configuración
+        $user = wp_get_current_user();
+        if (!in_array('administrator', $user->roles)) {
+            wp_redirect(home_url('/' . self::PAGE_SLUG . '/'));
+            exit;
+        }
+
+        $options = get_option('rtt_reservas_options', []);
+
+        $this->render_header('Configuración');
+        ?>
+        <div class="form-container">
+            <h1>Configuración de Cotizaciones</h1>
+
+            <form id="config-form" class="cotizacion-form">
+                <div class="form-section">
+                    <h3>Formas de Pago</h3>
+                    <p class="section-description">Esta información aparecerá en los PDFs de cotización.</p>
+                    <div class="form-group">
+                        <textarea id="cotizacion_formas_pago" name="cotizacion_formas_pago" rows="12" class="large-textarea"><?php
+                            echo esc_textarea($options['cotizacion_formas_pago'] ?? '1. TRANSFERENCIA BANCARIA
+   Banco: BCP - Banco de Crédito del Perú
+   Cuenta Corriente Soles: XXX-XXXXXXX-X-XX
+   Cuenta Corriente Dólares: XXX-XXXXXXX-X-XX
+   CCI: XXXXXXXXXXXXXXXXXXX
+   Titular: Ready To Travel Peru
+
+2. PAYPAL
+   Cuenta: pagos@readytotravelperu.com
+   (Se aplica comisión de 5%)
+
+3. PAGO EN EFECTIVO
+   En nuestras oficinas o al momento del tour
+
+* Enviar comprobante de pago a: reservas@readytotravelperu.com');
+                        ?></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Términos y Condiciones</h3>
+                    <div class="form-group">
+                        <textarea id="cotizacion_terminos" name="cotizacion_terminos" rows="10" class="large-textarea"><?php
+                            echo esc_textarea($options['cotizacion_terminos'] ?? '- Esta cotización tiene validez de 7 días a partir de la fecha de emisión.
+- Los precios están sujetos a disponibilidad y pueden variar sin previo aviso.
+- Para confirmar la reserva se requiere un depósito del 50% del total.
+- El saldo restante debe cancelarse 48 horas antes del inicio del tour.
+- Cancelaciones con más de 72 horas: devolución del 80% del depósito.
+- Cancelaciones con menos de 72 horas: no hay devolución.
+- Los tours están sujetos a condiciones climáticas.
+- Es obligatorio presentar documento de identidad el día del tour.
+- Menores de edad deben estar acompañados por un adulto responsable.');
+                        ?></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+                </div>
+
+                <div id="form-message" class="form-message" style="display: none;"></div>
+            </form>
+        </div>
+        <?php
+        $this->render_footer("
+            $('#config-form').on('submit', function(e) {
+                e.preventDefault();
+                var btn = $(this).find('button[type=submit]');
+                btn.prop('disabled', true).text('Guardando...');
+                $('#form-message').hide();
+
+                $.post(rttAjax.url, {
+                    action: 'rtt_save_configuracion',
+                    cotizacion_formas_pago: $('#cotizacion_formas_pago').val(),
+                    cotizacion_terminos: $('#cotizacion_terminos').val()
+                }, function(response) {
+                    if (response.success) {
+                        $('#form-message').removeClass('error').addClass('success').text('Configuración guardada').show();
+                    } else {
+                        $('#form-message').removeClass('success').addClass('error').text(response.data.message).show();
+                    }
+                    btn.prop('disabled', false).text('Guardar Configuración');
+                });
+            });
+        ");
+    }
+
+    /**
+     * AJAX: Guardar configuración
+     */
+    public function ajax_save_configuracion() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Sin permisos']);
+        }
+
+        $options = get_option('rtt_reservas_options', []);
+        $options['cotizacion_formas_pago'] = sanitize_textarea_field($_POST['cotizacion_formas_pago'] ?? '');
+        $options['cotizacion_terminos'] = sanitize_textarea_field($_POST['cotizacion_terminos'] ?? '');
+
+        update_option('rtt_reservas_options', $options);
+        wp_send_json_success(['message' => 'Configuración guardada']);
+    }
+
+    /**
+     * Página de Proveedores
+     */
+    private function render_proveedores() {
+        $tipos = RTT_Database::get_tipos_proveedores();
+        $tipo_filtro = sanitize_text_field($_GET['tipo'] ?? '');
+        $proveedores = RTT_Database::get_proveedores(['tipo' => $tipo_filtro]);
+
+        $this->render_header('Proveedores');
+        ?>
+        <div class="lista-container">
+            <div class="section-header">
+                <h1>Proveedores</h1>
+                <button type="button" class="btn btn-primary" id="btn-nuevo-proveedor">+ Nuevo Proveedor</button>
+            </div>
+
+            <div class="filters">
+                <form method="get" class="filter-form">
+                    <select name="tipo" onchange="this.form.submit()">
+                        <option value="">Todos los tipos</option>
+                        <?php foreach ($tipos as $key => $label): ?>
+                        <option value="<?php echo esc_attr($key); ?>" <?php selected($tipo_filtro, $key); ?>><?php echo esc_html($label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </form>
+            </div>
+
+            <?php if (empty($proveedores)): ?>
+            <div class="empty-state">
+                <p>No hay proveedores registrados.</p>
+            </div>
+            <?php else: ?>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Nombre</th>
+                        <th>Contacto</th>
+                        <th>Teléfono</th>
+                        <th>Costo Base</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($proveedores as $prov): ?>
+                    <tr data-id="<?php echo $prov->id; ?>">
+                        <td><span class="badge badge-<?php echo esc_attr($prov->tipo); ?>"><?php echo esc_html($tipos[$prov->tipo] ?? $prov->tipo); ?></span></td>
+                        <td><strong><?php echo esc_html($prov->nombre); ?></strong></td>
+                        <td><?php echo esc_html($prov->contacto); ?></td>
+                        <td><?php echo esc_html($prov->telefono); ?></td>
+                        <td><?php echo esc_html($prov->moneda); ?> <?php echo number_format($prov->costo_base, 2); ?></td>
+                        <td><?php echo $prov->activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'; ?></td>
+                        <td class="actions">
+                            <button type="button" class="btn btn-sm btn-edit" data-id="<?php echo $prov->id; ?>">Editar</button>
+                            <button type="button" class="btn btn-sm btn-danger btn-delete" data-id="<?php echo $prov->id; ?>">Eliminar</button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php endif; ?>
+        </div>
+
+        <!-- Modal Proveedor -->
+        <div id="modal-proveedor" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-title">Nuevo Proveedor</h2>
+                    <button type="button" class="modal-close">&times;</button>
+                </div>
+                <form id="proveedor-form">
+                    <input type="hidden" name="id" value="0">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prov_tipo">Tipo *</label>
+                            <select id="prov_tipo" name="tipo" required>
+                                <?php foreach ($tipos as $key => $label): ?>
+                                <option value="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="prov_nombre">Nombre *</label>
+                            <input type="text" id="prov_nombre" name="nombre" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prov_contacto">Persona de contacto</label>
+                            <input type="text" id="prov_contacto" name="contacto">
+                        </div>
+                        <div class="form-group">
+                            <label for="prov_telefono">Teléfono</label>
+                            <input type="text" id="prov_telefono" name="telefono">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prov_email">Email</label>
+                            <input type="email" id="prov_email" name="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="prov_costo">Costo base</label>
+                            <div class="input-group">
+                                <select id="prov_moneda" name="moneda">
+                                    <option value="PEN">S/</option>
+                                    <option value="USD">$</option>
+                                </select>
+                                <input type="number" id="prov_costo" name="costo_base" value="0" min="0" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="prov_notas">Notas</label>
+                        <textarea id="prov_notas" name="notas" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="prov_activo" name="activo" value="1" checked>
+                            Proveedor activo
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                        <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <?php
+        $this->render_footer($this->get_proveedores_scripts());
+    }
+
+    /**
+     * Scripts de proveedores
+     */
+    private function get_proveedores_scripts() {
+        return "
+        // Abrir modal nuevo
+        $('#btn-nuevo-proveedor').on('click', function() {
+            $('#modal-title').text('Nuevo Proveedor');
+            $('#proveedor-form')[0].reset();
+            $('input[name=id]').val(0);
+            $('#prov_activo').prop('checked', true);
+            $('#modal-proveedor').show();
+        });
+
+        // Cerrar modal
+        $('.modal-close').on('click', function() {
+            $('#modal-proveedor').hide();
+        });
+
+        // Editar proveedor
+        $('.btn-edit').on('click', function() {
+            var id = $(this).data('id');
+            var row = $(this).closest('tr');
+
+            $('#modal-title').text('Editar Proveedor');
+            $('input[name=id]').val(id);
+
+            // Cargar datos via AJAX
+            $.get(rttAjax.url, { action: 'rtt_get_proveedores', id: id }, function(response) {
+                if (response.success && response.data) {
+                    var p = response.data;
+                    $('#prov_tipo').val(p.tipo);
+                    $('#prov_nombre').val(p.nombre);
+                    $('#prov_contacto').val(p.contacto);
+                    $('#prov_telefono').val(p.telefono);
+                    $('#prov_email').val(p.email);
+                    $('#prov_moneda').val(p.moneda);
+                    $('#prov_costo').val(p.costo_base);
+                    $('#prov_notas').val(p.notas);
+                    $('#prov_activo').prop('checked', p.activo == 1);
+                    $('#modal-proveedor').show();
+                }
+            });
+        });
+
+        // Eliminar proveedor
+        $('.btn-delete').on('click', function() {
+            if (!confirm('¿Eliminar este proveedor?')) return;
+            var id = $(this).data('id');
+            var row = $(this).closest('tr');
+
+            $.post(rttAjax.url, { action: 'rtt_delete_proveedor', id: id }, function(response) {
+                if (response.success) {
+                    row.fadeOut(300, function() { $(this).remove(); });
+                } else {
+                    alert(response.data.message);
+                }
+            });
+        });
+
+        // Guardar proveedor
+        $('#proveedor-form').on('submit', function(e) {
+            e.preventDefault();
+            var formData = $(this).serialize();
+
+            $.post(rttAjax.url, formData + '&action=rtt_save_proveedor', function(response) {
+                if (response.success) {
+                    location.reload();
+                } else {
+                    alert(response.data.message);
+                }
+            });
+        });
+        ";
+    }
+
+    /**
+     * AJAX: Guardar proveedor
+     */
+    public function ajax_save_proveedor() {
+        if (!$this->can_access_panel()) {
+            wp_send_json_error(['message' => 'Sin acceso']);
+        }
+
+        $id = intval($_POST['id'] ?? 0);
+        $data = [
+            'tipo' => sanitize_text_field($_POST['tipo'] ?? ''),
+            'nombre' => sanitize_text_field($_POST['nombre'] ?? ''),
+            'contacto' => sanitize_text_field($_POST['contacto'] ?? ''),
+            'telefono' => sanitize_text_field($_POST['telefono'] ?? ''),
+            'email' => sanitize_email($_POST['email'] ?? ''),
+            'costo_base' => floatval($_POST['costo_base'] ?? 0),
+            'moneda' => sanitize_text_field($_POST['moneda'] ?? 'PEN'),
+            'notas' => sanitize_textarea_field($_POST['notas'] ?? ''),
+            'activo' => isset($_POST['activo']) ? 1 : 0,
+        ];
+
+        if (empty($data['nombre']) || empty($data['tipo'])) {
+            wp_send_json_error(['message' => 'Nombre y tipo son requeridos']);
+        }
+
+        if ($id > 0) {
+            $result = RTT_Database::update_proveedor($id, $data);
+        } else {
+            $result = RTT_Database::insert_proveedor($data);
+        }
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+
+        wp_send_json_success(['id' => $id > 0 ? $id : $result]);
+    }
+
+    /**
+     * AJAX: Eliminar proveedor
+     */
+    public function ajax_delete_proveedor() {
+        if (!$this->can_access_panel()) {
+            wp_send_json_error(['message' => 'Sin acceso']);
+        }
+
+        $id = intval($_POST['id'] ?? 0);
+        if (!$id) {
+            wp_send_json_error(['message' => 'ID inválido']);
+        }
+
+        RTT_Database::delete_proveedor($id);
+        wp_send_json_success();
+    }
+
+    /**
+     * AJAX: Obtener proveedor
+     */
+    public function ajax_get_proveedores() {
+        if (!$this->can_access_panel()) {
+            wp_send_json_error(['message' => 'Sin acceso']);
+        }
+
+        $id = intval($_GET['id'] ?? 0);
+        if ($id) {
+            $proveedor = RTT_Database::get_proveedor($id);
+            wp_send_json_success($proveedor);
+        }
+
+        $proveedores = RTT_Database::get_proveedores(['activo' => 1]);
+        wp_send_json_success($proveedores);
     }
 }
