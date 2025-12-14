@@ -213,6 +213,32 @@ class RTT_Admin {
             'rtt_whatsapp_section',
             ['field' => 'whatsapp_apikey']
         );
+
+        // Sección Cotizaciones
+        add_settings_section(
+            'rtt_cotizacion_section',
+            __('Configuración de Cotizaciones', 'rtt-reservas'),
+            [$this, 'cotizacion_section_callback'],
+            'rtt-reservas'
+        );
+
+        add_settings_field(
+            'cotizacion_formas_pago',
+            __('Formas de Pago', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_cotizacion_section',
+            ['field' => 'cotizacion_formas_pago']
+        );
+
+        add_settings_field(
+            'cotizacion_terminos',
+            __('Términos y Condiciones', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_cotizacion_section',
+            ['field' => 'cotizacion_terminos']
+        );
     }
 
     /**
@@ -241,6 +267,14 @@ class RTT_Admin {
         echo '<li>' . __('Recibirás tu API Key. Cópiala aquí abajo.', 'rtt-reservas') . '</li>';
         echo '</ol>';
         echo '<p><a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank">' . __('Ver instrucciones completas', 'rtt-reservas') . ' →</a></p>';
+    }
+
+    /**
+     * Callback de sección Cotizaciones
+     */
+    public function cotizacion_section_callback() {
+        echo '<p>' . __('Configura la información que aparecerá en los PDFs de cotización generados desde el panel de vendedor.', 'rtt-reservas') . '</p>';
+        echo '<p><strong>' . __('Acceso al panel de vendedor:', 'rtt-reservas') . '</strong> <a href="' . home_url('/vendedor/') . '" target="_blank">' . home_url('/vendedor/') . '</a></p>';
     }
 
     /**
@@ -322,6 +356,40 @@ class RTT_Admin {
                 echo '<p class="description">' . __('API Key que te envió CallMeBot por WhatsApp', 'rtt-reservas') . '</p>';
                 break;
 
+            case 'cotizacion_formas_pago':
+                $default = "1. TRANSFERENCIA BANCARIA
+   Banco: BCP - Banco de Crédito del Perú
+   Cuenta Corriente Soles: XXX-XXXXXXX-X-XX
+   Cuenta Corriente Dólares: XXX-XXXXXXX-X-XX
+   CCI: XXXXXXXXXXXXXXXXXXX
+   Titular: Ready To Travel Peru
+
+2. PAYPAL
+   Cuenta: pagos@readytotravelperu.com
+   (Se aplica comisión de 5%)
+
+3. PAGO EN EFECTIVO
+   En nuestras oficinas o al momento del tour
+
+* Enviar comprobante de pago a: reservas@readytotravelperu.com";
+                echo '<textarea name="rtt_reservas_options[' . esc_attr($field) . ']" rows="12" class="large-text code">' . esc_textarea($value ?: $default) . '</textarea>';
+                echo '<p class="description">' . __('Información de cuentas bancarias, PayPal, etc. que aparecerá en el PDF de cotización.', 'rtt-reservas') . '</p>';
+                break;
+
+            case 'cotizacion_terminos':
+                $default = "- Esta cotización tiene validez de 7 días a partir de la fecha de emisión.
+- Los precios están sujetos a disponibilidad y pueden variar sin previo aviso.
+- Para confirmar la reserva se requiere un depósito del 50% del total.
+- El saldo restante debe cancelarse 48 horas antes del inicio del tour.
+- Cancelaciones con más de 72 horas: devolución del 80% del depósito.
+- Cancelaciones con menos de 72 horas: no hay devolución.
+- Los tours están sujetos a condiciones climáticas.
+- Es obligatorio presentar documento de identidad el día del tour.
+- Menores de edad deben estar acompañados por un adulto responsable.";
+                echo '<textarea name="rtt_reservas_options[' . esc_attr($field) . ']" rows="10" class="large-text code">' . esc_textarea($value ?: $default) . '</textarea>';
+                echo '<p class="description">' . __('Términos y condiciones que aparecerán en el PDF de cotización.', 'rtt-reservas') . '</p>';
+                break;
+
             default:
                 echo '<input type="text" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value) . '" class="regular-text">';
         }
@@ -365,6 +433,10 @@ class RTT_Admin {
         $sanitized['whatsapp_enabled'] = isset($input['whatsapp_enabled']) ? '1' : '';
         $sanitized['whatsapp_phone'] = preg_replace('/[^0-9+]/', '', $input['whatsapp_phone'] ?? '');
         $sanitized['whatsapp_apikey'] = sanitize_text_field($input['whatsapp_apikey'] ?? '');
+
+        // Campos de Cotización (permitir saltos de línea)
+        $sanitized['cotizacion_formas_pago'] = sanitize_textarea_field($input['cotizacion_formas_pago'] ?? '');
+        $sanitized['cotizacion_terminos'] = sanitize_textarea_field($input['cotizacion_terminos'] ?? '');
 
         return $sanitized;
     }

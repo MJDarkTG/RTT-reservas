@@ -230,9 +230,14 @@ class RTT_Cotizacion_PDF extends FPDF {
     }
 
     /**
-     * Formas de pago por defecto
+     * Formas de pago por defecto (desde configuración)
      */
     private function getDefaultFormasPago() {
+        // Usar configuración si está definida
+        if (!empty($this->options['cotizacion_formas_pago'])) {
+            return $this->options['cotizacion_formas_pago'];
+        }
+
         return "1. TRANSFERENCIA BANCARIA
    Banco: BCP - Banco de Credito del Peru
    Cuenta Corriente Soles: XXX-XXXXXXX-X-XX
@@ -274,9 +279,19 @@ class RTT_Cotizacion_PDF extends FPDF {
     }
 
     /**
-     * Terminos por defecto
+     * Terminos por defecto (desde configuración)
      */
     private function getDefaultTerminos() {
+        // Usar configuración si está definida
+        if (!empty($this->options['cotizacion_terminos'])) {
+            // Reemplazar placeholder de días de validez
+            return str_replace(
+                ['7 días', '7 dias'],
+                $this->cotizacion->validez_dias . ' dias',
+                $this->options['cotizacion_terminos']
+            );
+        }
+
         return "- Esta cotizacion tiene validez de " . $this->cotizacion->validez_dias . " dias a partir de la fecha de emision.
 - Los precios estan sujetos a disponibilidad y pueden variar sin previo aviso.
 - Para confirmar la reserva se requiere un deposito del 50% del total.
