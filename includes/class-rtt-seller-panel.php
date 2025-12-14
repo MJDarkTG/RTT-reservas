@@ -41,6 +41,7 @@ class RTT_Seller_Panel {
         add_action('wp_ajax_rtt_send_cotizacion', [$this, 'ajax_send_cotizacion']);
         add_action('wp_ajax_rtt_delete_cotizacion', [$this, 'ajax_delete_cotizacion']);
         add_action('wp_ajax_rtt_get_cotizacion', [$this, 'ajax_get_cotizacion']);
+        add_action('wp_ajax_rtt_preview_cotizacion_pdf', [$this, 'ajax_preview_pdf']);
     }
 
     /**
@@ -265,6 +266,39 @@ class RTT_Seller_Panel {
         } else {
             wp_send_json_error(['message' => 'Error al enviar el email']);
         }
+    }
+
+    /**
+     * Preview PDF de cotización
+     */
+    public function ajax_preview_pdf() {
+        if (!$this->can_access_panel()) {
+            wp_die('Sin acceso');
+        }
+
+        $id = intval($_GET['id'] ?? 0);
+        if (!$id) {
+            wp_die('ID inválido');
+        }
+
+        $cotizacion = RTT_Database::get_cotizacion($id);
+        if (!$cotizacion) {
+            wp_die('Cotización no encontrada');
+        }
+
+        // Generar PDF y mostrarlo en el navegador
+        $pdf_path = RTT_Cotizacion_PDF::generate($cotizacion);
+
+        if (file_exists($pdf_path)) {
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: inline; filename="cotizacion-' . $cotizacion->codigo . '.pdf"');
+            header('Content-Length: ' . filesize($pdf_path));
+            readfile($pdf_path);
+            unlink($pdf_path);
+        } else {
+            wp_die('Error al generar el PDF');
+        }
+        exit;
     }
 
     /**
@@ -632,7 +666,7 @@ class RTT_Seller_Panel {
      * Nueva Cotización
      */
     private function render_nueva_cotizacion() {
-        $tours = RTT_Database::get_tours_list();
+        $tours = RTT_Tours::get_tours();
         $options = get_option('rtt_reservas_options', []);
 
         $this->render_header('Nueva Cotización');
@@ -674,8 +708,14 @@ class RTT_Seller_Panel {
                             <label for="tour">Tour *</label>
                             <select id="tour" name="tour" required>
                                 <option value="">Seleccionar tour...</option>
-                                <?php foreach ($tours as $tour): ?>
-                                <option value="<?php echo esc_attr($tour); ?>"><?php echo esc_html($tour); ?></option>
+                                <?php foreach ($tours as $tour):
+                                    $tour_name = $tour['name'];
+                                    $tour_price = $tour['price'] ?? 0;
+                                    $tour_duration = $tour['duration'] ?? '';
+                                ?>
+                                <option value="<?php echo esc_attr($tour_name); ?>" data-price="<?php echo esc_attr($tour_price); ?>">
+                                    <?php echo esc_html($tour_name); ?> - $<?php echo number_format($tour_price, 0); ?> (<?php echo esc_html($tour_duration); ?>)
+                                </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -745,6 +785,7 @@ class RTT_Seller_Panel {
 
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary" name="action" value="guardar">Guardar borrador</button>
+                    <button type="button" class="btn btn-info btn-preview-pdf disabled">📄 Previsualizar PDF</button>
                     <button type="submit" class="btn btn-success" name="action" value="enviar">Guardar y Enviar</button>
                     <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/'); ?>" class="btn btn-secondary">Cancelar</a>
                 </div>
@@ -768,7 +809,7 @@ class RTT_Seller_Panel {
             exit;
         }
 
-        $tours = RTT_Database::get_tours_list();
+        $tours = RTT_Tours::get_tours();
         $options = get_option('rtt_reservas_options', []);
 
         $this->render_header('Editar Cotización');
@@ -810,8 +851,14 @@ class RTT_Seller_Panel {
                             <label for="tour">Tour *</label>
                             <select id="tour" name="tour" required>
                                 <option value="">Seleccionar tour...</option>
-                                <?php foreach ($tours as $tour): ?>
-                                <option value="<?php echo esc_attr($tour); ?>" <?php selected($cotizacion->tour, $tour); ?>><?php echo esc_html($tour); ?></option>
+                                <?php foreach ($tours as $tour):
+                                    $tour_name = $tour['name'];
+                                    $tour_price = $tour['price'] ?? 0;
+                                    $tour_duration = $tour['duration'] ?? '';
+                                ?>
+                                <option value="<?php echo esc_attr($tour_name); ?>" data-price="<?php echo esc_attr($tour_price); ?>" <?php selected($cotizacion->tour, $tour_name); ?>>
+                                    <?php echo esc_html($tour_name); ?> - $<?php echo number_format($tour_price, 0); ?> (<?php echo esc_html($tour_duration); ?>)
+                                </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -881,6 +928,7 @@ class RTT_Seller_Panel {
 
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary" name="action" value="guardar">Guardar cambios</button>
+                    <button type="button" class="btn btn-info btn-preview-pdf">📄 Previsualizar PDF</button>
                     <?php if ($cotizacion->estado === 'borrador'): ?>
                     <button type="submit" class="btn btn-success" name="action" value="enviar">Guardar y Enviar</button>
                     <?php endif; ?>
@@ -1073,13 +1121,34 @@ class RTT_Seller_Panel {
             $('#precio_total').val(total.toFixed(2));
         }
 
+        // Auto-fill price when tour is selected
+        $('#tour').on('change', function() {
+            var selectedOption = $(this).find('option:selected');
+            var price = selectedOption.data('price');
+            if (price && parseFloat($('#precio_unitario').val()) == 0) {
+                $('#precio_unitario').val(price);
+                calcularTotal();
+            }
+        });
+
         $('#cantidad_pasajeros, #precio_unitario, #descuento, #descuento_tipo').on('change input', calcularTotal);
         calcularTotal();
+
+        // Preview PDF button
+        $('.btn-preview-pdf').on('click', function() {
+            var id = $('input[name=id]').val();
+            if (!id || id == '0') {
+                alert('Primero guarda la cotización para poder previsualizar el PDF');
+                return;
+            }
+            window.open(rttAjax.url + '?action=rtt_preview_cotizacion_pdf&id=' + id, '_blank');
+        });
 
         $('#cotizacion-form').on('submit', function(e) {
             e.preventDefault();
             var form = $(this);
             var submitBtn = form.find('button[type=submit]:focus');
+            if (!submitBtn.length) submitBtn = form.find('button[type=submit]:first');
             var action = submitBtn.val() || 'guardar';
             var btnText = submitBtn.text();
 
@@ -1098,10 +1167,12 @@ class RTT_Seller_Panel {
                         }, function(sendResponse) {
                             if (sendResponse.success) {
                                 $('#form-message').removeClass('error').addClass('success')
-                                    .text('Cotización guardada y enviada al cliente').show();
+                                    .html('<strong>✓ ENVIADO</strong><br>Cotización enviada exitosamente a: ' + $('#cliente_email').val()).show();
+                                // Scroll to message
+                                $('html, body').animate({ scrollTop: $('#form-message').offset().top - 100 }, 500);
                                 setTimeout(function() {
                                     window.location.href = '" . home_url('/' . self::PAGE_SLUG . '/') . "';
-                                }, 2000);
+                                }, 3000);
                             } else {
                                 $('#form-message').removeClass('success').addClass('error')
                                     .text('Guardada pero error al enviar: ' + sendResponse.data.message).show();
@@ -1113,6 +1184,8 @@ class RTT_Seller_Panel {
                             .text(response.data.message).show();
                         if (response.data.id) {
                             $('input[name=id]').val(response.data.id);
+                            // Enable preview PDF button after saving
+                            $('.btn-preview-pdf').removeClass('disabled');
                         }
                         submitBtn.prop('disabled', false).text(btnText);
                     }
@@ -1283,6 +1356,9 @@ class RTT_Seller_Panel {
         .btn-primary:hover { background: #003050; }
         .btn-success { background: #27AE60; color: white; }
         .btn-success:hover { background: #219a52; }
+        .btn-info { background: #5bc0de; color: white; }
+        .btn-info:hover { background: #46b8da; }
+        .btn-info.disabled { background: #ccc; cursor: not-allowed; opacity: 0.6; }
         .btn-secondary { background: #e0e0e0; color: #333; }
         .btn-danger { background: #d9534f; color: white; }
         .btn-sm { padding: 6px 12px; font-size: 12px; }
