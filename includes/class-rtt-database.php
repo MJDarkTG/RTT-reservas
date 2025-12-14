@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 
 class RTT_Database {
 
-    const DB_VERSION = '1.5';
+    const DB_VERSION = '1.6';
 
     /**
      * Crear tablas en la base de datos
@@ -90,10 +90,47 @@ class RTT_Database {
             KEY page_url (page_url(100))
         ) $charset_collate;";
 
+        // Tabla de cotizaciones
+        $table_cotizaciones = $wpdb->prefix . 'rtt_cotizaciones';
+        $sql_cotizaciones = "CREATE TABLE $table_cotizaciones (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            codigo varchar(50) NOT NULL,
+            vendedor_id bigint(20) UNSIGNED NOT NULL,
+            cliente_nombre varchar(255) NOT NULL,
+            cliente_email varchar(100) NOT NULL,
+            cliente_telefono varchar(50) DEFAULT NULL,
+            cliente_pais varchar(100) DEFAULT NULL,
+            tour varchar(255) NOT NULL,
+            fecha_tour date NOT NULL,
+            cantidad_pasajeros int(11) NOT NULL DEFAULT 1,
+            precio_unitario decimal(10,2) NOT NULL DEFAULT 0,
+            precio_total decimal(10,2) NOT NULL DEFAULT 0,
+            descuento decimal(10,2) DEFAULT 0,
+            descuento_tipo varchar(20) DEFAULT 'porcentaje',
+            notas text,
+            terminos text,
+            formas_pago text,
+            moneda varchar(10) DEFAULT 'USD',
+            validez_dias int(11) DEFAULT 7,
+            estado varchar(20) NOT NULL DEFAULT 'borrador',
+            enviada_at datetime DEFAULT NULL,
+            aceptada_at datetime DEFAULT NULL,
+            reserva_id bigint(20) UNSIGNED DEFAULT NULL,
+            fecha_creacion datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            fecha_actualizacion datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY codigo (codigo),
+            KEY vendedor_id (vendedor_id),
+            KEY estado (estado),
+            KEY cliente_email (cliente_email(100)),
+            KEY fecha_tour (fecha_tour)
+        ) $charset_collate;";
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql_reservas);
         dbDelta($sql_pasajeros);
         dbDelta($sql_tracking);
+        dbDelta($sql_cotizaciones);
 
         // Agregar índice de tour si no existe (para instalaciones existentes)
         self::maybe_add_tour_index();
@@ -744,5 +781,264 @@ class RTT_Database {
         ", $today, $today, $end_date), ARRAY_A);
 
         return $results ?: [];
+    }
+
+    // ==========================================
+    // COTIZACIONES
+    // ==========================================
+
+    /**
+     * Generar código único de cotización
+     */
+    public static function generate_cotizacion_codigo() {
+        return 'COT-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
+    }
+
+    /**
+     * Insertar nueva cotización
+     */
+    public static function insert_cotizacion($data) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_cotizaciones';
+        $codigo = self::generate_cotizacion_codigo();
+
+        $result = $wpdb->insert($table, [
+            'codigo' => $codigo,
+            'vendedor_id' => intval($data['vendedor_id']),
+            'cliente_nombre' => sanitize_text_field($data['cliente_nombre']),
+            'cliente_email' => sanitize_email($data['cliente_email']),
+            'cliente_telefono' => sanitize_text_field($data['cliente_telefono'] ?? ''),
+            'cliente_pais' => sanitize_text_field($data['cliente_pais'] ?? ''),
+            'tour' => sanitize_text_field($data['tour']),
+            'fecha_tour' => sanitize_text_field($data['fecha_tour']),
+            'cantidad_pasajeros' => intval($data['cantidad_pasajeros']),
+            'precio_unitario' => floatval($data['precio_unitario']),
+            'precio_total' => floatval($data['precio_total']),
+            'descuento' => floatval($data['descuento'] ?? 0),
+            'descuento_tipo' => sanitize_text_field($data['descuento_tipo'] ?? 'porcentaje'),
+            'notas' => sanitize_textarea_field($data['notas'] ?? ''),
+            'terminos' => wp_kses_post($data['terminos'] ?? ''),
+            'formas_pago' => wp_kses_post($data['formas_pago'] ?? ''),
+            'moneda' => sanitize_text_field($data['moneda'] ?? 'USD'),
+            'validez_dias' => intval($data['validez_dias'] ?? 7),
+            'estado' => 'borrador',
+        ]);
+
+        if ($result === false) {
+            return new WP_Error('db_error', 'Error al guardar la cotización');
+        }
+
+        return [
+            'id' => $wpdb->insert_id,
+            'codigo' => $codigo
+        ];
+    }
+
+    /**
+     * Actualizar cotización
+     */
+    public static function update_cotizacion($id, $data) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_cotizaciones';
+
+        $update_data = [];
+        $format = [];
+
+        $fields = [
+            'cliente_nombre' => '%s',
+            'cliente_email' => '%s',
+            'cliente_telefono' => '%s',
+            'cliente_pais' => '%s',
+            'tour' => '%s',
+            'fecha_tour' => '%s',
+            'cantidad_pasajeros' => '%d',
+            'precio_unitario' => '%f',
+            'precio_total' => '%f',
+            'descuento' => '%f',
+            'descuento_tipo' => '%s',
+            'notas' => '%s',
+            'terminos' => '%s',
+            'formas_pago' => '%s',
+            'moneda' => '%s',
+            'validez_dias' => '%d',
+            'estado' => '%s',
+        ];
+
+        foreach ($fields as $field => $fmt) {
+            if (isset($data[$field])) {
+                $update_data[$field] = $data[$field];
+                $format[] = $fmt;
+            }
+        }
+
+        if (empty($update_data)) {
+            return false;
+        }
+
+        return $wpdb->update($table, $update_data, ['id' => $id], $format, ['%d']) !== false;
+    }
+
+    /**
+     * Obtener cotización por ID
+     */
+    public static function get_cotizacion($id) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_cotizaciones';
+        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $id));
+    }
+
+    /**
+     * Obtener cotización por código
+     */
+    public static function get_cotizacion_by_codigo($codigo) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_cotizaciones';
+        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE codigo = %s", $codigo));
+    }
+
+    /**
+     * Obtener cotizaciones con filtros
+     */
+    public static function get_cotizaciones($args = []) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_cotizaciones';
+
+        $defaults = [
+            'vendedor_id' => 0,
+            'estado' => '',
+            'buscar' => '',
+            'per_page' => 20,
+            'page' => 1,
+            'orderby' => 'fecha_creacion',
+            'order' => 'DESC'
+        ];
+
+        $args = wp_parse_args($args, $defaults);
+
+        $where = '1=1';
+        $values = [];
+
+        if (!empty($args['vendedor_id'])) {
+            $where .= ' AND vendedor_id = %d';
+            $values[] = $args['vendedor_id'];
+        }
+
+        if (!empty($args['estado'])) {
+            $where .= ' AND estado = %s';
+            $values[] = $args['estado'];
+        }
+
+        if (!empty($args['buscar'])) {
+            $where .= ' AND (codigo LIKE %s OR cliente_nombre LIKE %s OR cliente_email LIKE %s OR tour LIKE %s)';
+            $search = '%' . $wpdb->esc_like($args['buscar']) . '%';
+            $values = array_merge($values, [$search, $search, $search, $search]);
+        }
+
+        $orderby = in_array($args['orderby'], ['fecha_creacion', 'fecha_tour', 'codigo', 'estado', 'precio_total'])
+            ? $args['orderby'] : 'fecha_creacion';
+        $order = strtoupper($args['order']) === 'ASC' ? 'ASC' : 'DESC';
+
+        $offset = ($args['page'] - 1) * $args['per_page'];
+
+        $sql = "SELECT * FROM $table WHERE $where ORDER BY $orderby $order LIMIT %d OFFSET %d";
+        $values[] = $args['per_page'];
+        $values[] = $offset;
+
+        $results = $wpdb->get_results($wpdb->prepare($sql, $values));
+
+        // Total para paginación
+        $sql_count = "SELECT COUNT(*) FROM $table WHERE $where";
+        $count_values = array_slice($values, 0, -2);
+        $total = empty($count_values)
+            ? $wpdb->get_var($sql_count)
+            : $wpdb->get_var($wpdb->prepare($sql_count, $count_values));
+
+        return [
+            'items' => $results,
+            'total' => intval($total),
+            'pages' => ceil($total / $args['per_page'])
+        ];
+    }
+
+    /**
+     * Marcar cotización como enviada
+     */
+    public static function mark_cotizacion_enviada($id) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_cotizaciones';
+        $peru_tz = new DateTimeZone('America/Lima');
+        $now = new DateTime('now', $peru_tz);
+
+        return $wpdb->update(
+            $table,
+            [
+                'estado' => 'enviada',
+                'enviada_at' => $now->format('Y-m-d H:i:s')
+            ],
+            ['id' => $id],
+            ['%s', '%s'],
+            ['%d']
+        ) !== false;
+    }
+
+    /**
+     * Marcar cotización como aceptada
+     */
+    public static function mark_cotizacion_aceptada($id) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_cotizaciones';
+        $peru_tz = new DateTimeZone('America/Lima');
+        $now = new DateTime('now', $peru_tz);
+
+        return $wpdb->update(
+            $table,
+            [
+                'estado' => 'aceptada',
+                'aceptada_at' => $now->format('Y-m-d H:i:s')
+            ],
+            ['id' => $id],
+            ['%s', '%s'],
+            ['%d']
+        ) !== false;
+    }
+
+    /**
+     * Eliminar cotización
+     */
+    public static function delete_cotizacion($id) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_cotizaciones';
+        return $wpdb->delete($table, ['id' => $id], ['%d']);
+    }
+
+    /**
+     * Estadísticas de cotizaciones por vendedor
+     */
+    public static function get_cotizaciones_stats($vendedor_id = 0) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'rtt_cotizaciones';
+
+        $where = $vendedor_id ? $wpdb->prepare("WHERE vendedor_id = %d", $vendedor_id) : "";
+
+        $result = $wpdb->get_row("
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN estado = 'borrador' THEN 1 ELSE 0 END) as borradores,
+                SUM(CASE WHEN estado = 'enviada' THEN 1 ELSE 0 END) as enviadas,
+                SUM(CASE WHEN estado = 'aceptada' THEN 1 ELSE 0 END) as aceptadas,
+                SUM(CASE WHEN estado = 'vencida' THEN 1 ELSE 0 END) as vencidas,
+                SUM(CASE WHEN estado = 'aceptada' THEN precio_total ELSE 0 END) as total_aceptado
+            FROM {$table}
+            {$where}
+        ");
+
+        return [
+            'total' => intval($result->total ?? 0),
+            'borradores' => intval($result->borradores ?? 0),
+            'enviadas' => intval($result->enviadas ?? 0),
+            'aceptadas' => intval($result->aceptadas ?? 0),
+            'vencidas' => intval($result->vencidas ?? 0),
+            'total_aceptado' => floatval($result->total_aceptado ?? 0),
+        ];
     }
 }

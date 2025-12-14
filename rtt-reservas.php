@@ -3,7 +3,7 @@
  * Plugin Name: RTT Reservas
  * Plugin URI: https://readytotravelperu.com
  * Description: Tour booking system with wizard form, PDF generation and email notifications.
- * Version: 1.7.0
+ * Version: 1.8.0
  * Author: Ready To Travel Peru
  * Author URI: https://readytotravelperu.com
  * Text Domain: rtt-reservas
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Definir constantes del plugin
-define('RTT_RESERVAS_VERSION', '1.7.0');
+define('RTT_RESERVAS_VERSION', '1.8.0');
 define('RTT_RESERVAS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('RTT_RESERVAS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('RTT_RESERVAS_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -100,6 +100,8 @@ final class RTT_Reservas {
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-admin-stats.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-admin-calendar.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-whatsapp.php';
+        require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-cotizacion-pdf.php';
+        require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-seller-panel.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-manual.php';
     }
 
@@ -143,6 +145,10 @@ final class RTT_Reservas {
         // Calendario de tours
         $calendar = new RTT_Admin_Calendar();
         $calendar->init();
+
+        // Panel de vendedor (cotizaciones)
+        $seller_panel = new RTT_Seller_Panel();
+        $seller_panel->init();
     }
 
     /**
@@ -322,6 +328,13 @@ function rtt_reservas_activate() {
 
     // Importar tours por defecto
     RTT_Tours_CPT::import_default_tours();
+
+    // Crear rol de vendedor
+    if (!get_role('rtt_vendedor')) {
+        add_role('rtt_vendedor', 'Vendedor RTT', [
+            'read' => true,
+        ]);
+    }
 
     // Crear opciones por defecto
     $default_options = [
