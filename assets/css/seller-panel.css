@@ -1495,10 +1495,22 @@ body {
         color: var(--text-secondary);
         font-size: 12px;
         text-transform: uppercase;
+        flex-shrink: 0;
+        margin-right: 10px;
+    }
+
+    /* Celda de acciones sin label */
+    .data-table td.actions::before {
+        content: none;
+    }
+
+    .data-table td.actions {
+        justify-content: center;
+        border-top: 1px solid var(--border-light);
     }
 
     .table-actions {
-        justify-content: flex-end;
+        justify-content: center;
         width: 100%;
         gap: 12px;
     }
@@ -1516,13 +1528,111 @@ body {
     }
 
     .table-client-email {
-        display: none;
+        font-size: 11px;
+        color: var(--text-muted);
+        word-break: break-all;
+    }
+
+    .table-client-name {
+        font-weight: 600;
     }
 
     .section-header {
         flex-direction: column;
         gap: 15px;
         align-items: flex-start;
+    }
+
+    /* Formulario - reducir paddings en móvil */
+    .form-container {
+        border-radius: 0;
+        margin: 0 -15px;
+        width: calc(100% + 30px);
+    }
+
+    .form-container > h1 {
+        padding: 15px;
+        font-size: 18px;
+    }
+
+    .cotizacion-form {
+        padding: 15px;
+    }
+
+    .form-section {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+    }
+
+    .form-section > h3 {
+        font-size: 14px;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-row {
+        gap: 0;
+    }
+
+    /* Costos internos compacto */
+    .costos-internos-section {
+        padding: 15px !important;
+        margin: 0 -15px;
+        width: calc(100% + 30px);
+        border-radius: 0;
+    }
+
+    .costos-header {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .costos-header-icon {
+        font-size: 24px;
+    }
+
+    .tipo-cambio-mini {
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .tipo-cambio-mini input {
+        width: 80px;
+    }
+
+    .costo-item {
+        padding: 10px;
+        gap: 8px;
+    }
+
+    .costos-summary {
+        gap: 10px;
+    }
+
+    .summary-card {
+        padding: 12px;
+    }
+
+    /* Botones de acción compactos */
+    .form-actions {
+        gap: 10px;
+        padding: 15px 0;
+    }
+
+    .form-actions .btn {
+        flex: 1 1 calc(50% - 5px);
+        padding: 12px 10px;
+        font-size: 13px;
+        text-align: center;
+    }
+
+    .form-actions .btn-secondary {
+        flex: 1 1 100%;
+        order: 10;
     }
 }
 
@@ -2183,98 +2293,3 @@ body {
     border-color: var(--primary);
 }
 
-/* ===================================
-   MOBILE: Tabla Data-Table como Tarjetas
-   =================================== */
-@media (max-width: 768px) {
-    /* Ocultar cabecera de tabla */
-    .data-table thead {
-        display: none;
-    }
-
-    /* Tabla como flex column */
-    .data-table tbody {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    /* Cada fila como tarjeta */
-    .data-table tbody tr {
-        display: block;
-        background: white;
-        border-radius: var(--radius-md);
-        padding: 16px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        border: 1px solid var(--border-light);
-    }
-
-    /* Cada celda como fila flex */
-    .data-table tbody td {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        padding: 8px 0;
-        border: none;
-        border-bottom: 1px solid var(--border-light);
-    }
-
-    .data-table tbody td:last-child {
-        border-bottom: none;
-        padding-top: 12px;
-        margin-top: 8px;
-    }
-
-    /* Label desde data-label */
-    .data-table tbody td::before {
-        content: attr(data-label);
-        font-weight: 600;
-        color: var(--text-secondary);
-        font-size: 12px;
-        text-transform: uppercase;
-        flex-shrink: 0;
-        margin-right: 12px;
-    }
-
-    /* Celda de acciones sin label */
-    .data-table tbody td.actions::before {
-        content: none;
-    }
-
-    .data-table tbody td.actions {
-        justify-content: center;
-        border-top: 1px solid var(--border-light);
-    }
-
-    /* Botones más grandes para táctil */
-    .btn-icon {
-        min-width: 48px;
-        min-height: 48px;
-        font-size: 18px;
-    }
-
-    /* Mayor separación del botón eliminar */
-    .btn-icon.btn-delete,
-    .btn-icon.btn-icon-delete,
-    .btn-icon.btn-delete-cotizacion {
-        margin-left: 16px;
-    }
-
-    /* Table actions en móvil */
-    .data-table .table-actions {
-        display: flex;
-        justify-content: center;
-        width: 100%;
-        gap: 12px;
-    }
-
-    /* Nombres de cliente en móvil */
-    .table-client-name {
-        font-weight: 600;
-    }
-
-    .table-client-email {
-        font-size: 12px;
-        color: var(--text-secondary);
-    }
-}
