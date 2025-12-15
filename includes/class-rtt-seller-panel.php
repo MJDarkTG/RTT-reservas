@@ -1763,19 +1763,19 @@ class RTT_Seller_Panel {
                     <tbody>
                         <?php foreach ($cotizaciones['items'] as $cot): ?>
                         <tr>
-                            <td><span class="table-code"><?php echo esc_html($cot->codigo); ?></span></td>
-                            <td>
-                                <div class="table-client">
-                                    <span class="table-client-name"><?php echo esc_html($cot->cliente_nombre); ?></span>
-                                    <span class="table-client-email"><?php echo esc_html($cot->cliente_email); ?></span>
-                                </div>
+                            <td data-label="Código"><span class="table-code"><?php echo esc_html($cot->codigo); ?></span></td>
+                            <td data-label="Cliente">
+                                <span class="table-client-name"><?php echo esc_html($cot->cliente_nombre); ?></span><br>
+                                <small class="table-client-email"><?php echo esc_html($cot->cliente_email); ?></small>
                             </td>
-                            <td><span class="table-tour"><?php echo esc_html(mb_substr($cot->tour, 0, 35)); ?><?php echo strlen($cot->tour) > 35 ? '...' : ''; ?></span></td>
-                            <td><span class="table-price"><?php echo esc_html($cot->moneda); ?> <?php echo number_format($cot->precio_total, 2); ?></span></td>
-                            <td><span class="badge badge-<?php echo esc_attr($cot->estado); ?>"><?php echo esc_html(ucfirst($cot->estado)); ?></span></td>
-                            <td><?php echo date_i18n('d/m/Y', strtotime($cot->fecha_creacion)); ?></td>
-                            <td class="table-actions">
-                                <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/editar/?id=' . $cot->id); ?>" class="btn btn-sm btn-outline">Editar</a>
+                            <td data-label="Tour"><?php echo esc_html(mb_substr($cot->tour, 0, 30)); ?><?php echo strlen($cot->tour) > 30 ? '...' : ''; ?></td>
+                            <td data-label="Total"><?php echo esc_html($cot->moneda); ?> <?php echo number_format($cot->precio_total, 2); ?></td>
+                            <td data-label="Estado"><span class="badge badge-<?php echo esc_attr($cot->estado); ?>"><?php echo esc_html(ucfirst($cot->estado)); ?></span></td>
+                            <td data-label="Fecha"><?php echo date_i18n('d/m/Y', strtotime($cot->fecha_creacion)); ?></td>
+                            <td data-label="" class="actions">
+                                <div class="table-actions">
+                                    <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/editar/?id=' . $cot->id); ?>" class="btn-icon" title="Editar">✏️</a>
+                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
