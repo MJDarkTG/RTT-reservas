@@ -27,11 +27,14 @@ class RTT_Seller_Panel {
         // Crear rol al activar
         add_action('init', [$this, 'register_seller_role']);
 
-        // Registrar rewrite rules
+        // Registrar rewrite rules (backup, por si funciona)
         add_action('init', [$this, 'add_rewrite_rules']);
 
-        // Manejar la página del panel
+        // Manejar la página del panel (método antiguo)
         add_action('template_redirect', [$this, 'handle_panel_page']);
+
+        // Registrar shortcode [rtt_seller_panel]
+        add_shortcode('rtt_seller_panel', [$this, 'render_shortcode']);
 
         // AJAX handlers
         add_action('wp_ajax_rtt_seller_login', [$this, 'ajax_login']);
@@ -46,6 +49,745 @@ class RTT_Seller_Panel {
         add_action('wp_ajax_rtt_save_proveedor', [$this, 'ajax_save_proveedor']);
         add_action('wp_ajax_rtt_delete_proveedor', [$this, 'ajax_delete_proveedor']);
         add_action('wp_ajax_rtt_get_proveedores', [$this, 'ajax_get_proveedores']);
+    }
+
+    /**
+     * Shortcode [rtt_seller_panel]
+     * Permite embeber el panel en cualquier página de WordPress/Elementor
+     */
+    public function render_shortcode($atts = []) {
+        // Capturar output
+        ob_start();
+
+        // Usar parámetro GET para la acción
+        $action = sanitize_text_field($_GET['panel'] ?? 'dashboard');
+
+        // Si no está logueado, mostrar login
+        if (!$this->can_access_panel()) {
+            $this->render_login_shortcode();
+        } else {
+            // Renderizar página según acción
+            switch ($action) {
+                case 'nueva':
+                    $this->render_nueva_cotizacion_shortcode();
+                    break;
+                case 'editar':
+                    $this->render_editar_cotizacion_shortcode();
+                    break;
+                case 'ver':
+                    $this->render_ver_cotizacion_shortcode();
+                    break;
+                case 'lista':
+                    $this->render_lista_cotizaciones_shortcode();
+                    break;
+                case 'configuracion':
+                    $this->render_configuracion_shortcode();
+                    break;
+                case 'proveedores':
+                    $this->render_proveedores_shortcode();
+                    break;
+                case 'logout':
+                    wp_logout();
+                    $current_url = get_permalink();
+                    wp_redirect($current_url);
+                    exit;
+                default:
+                    $this->render_dashboard_shortcode();
+            }
+        }
+
+        return ob_get_clean();
+    }
+
+    /**
+     * Obtener URL base para shortcode
+     */
+    private function get_shortcode_url($action = '') {
+        $base_url = get_permalink();
+        if (empty($action) || $action === 'dashboard') {
+            return $base_url;
+        }
+        return add_query_arg('panel', $action, $base_url);
+    }
+
+    /**
+     * Header para shortcode (sin DOCTYPE, usa CSS/JS inline)
+     */
+    private function render_header_shortcode($title = 'Panel de Vendedor', $active_page = '') {
+        $user = wp_get_current_user();
+        $initials = strtoupper(substr($user->display_name, 0, 2));
+        $is_admin = in_array('administrator', $user->roles);
+
+        // Determinar página activa
+        if (empty($active_page)) {
+            $active_page = sanitize_text_field($_GET['panel'] ?? 'dashboard');
+        }
+
+        // Cargar CSS
+        wp_enqueue_style('rtt-seller-panel-fonts', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap', [], null);
+        wp_enqueue_style('rtt-seller-panel-css', RTT_RESERVAS_PLUGIN_URL . 'assets/css/seller-panel.css', [], RTT_RESERVAS_VERSION);
+        ?>
+        <div class="rtt-seller-panel-wrapper">
+            <div class="app-layout">
+                <!-- Sidebar -->
+                <aside class="sidebar">
+                    <div class="sidebar-header">
+                        <div class="sidebar-logo">RTT</div>
+                        <div class="sidebar-brand">
+                            <h1>Cotizador</h1>
+                            <span>Ready To Travel</span>
+                        </div>
+                    </div>
+
+                    <nav class="sidebar-nav">
+                        <div class="nav-section">
+                            <span class="nav-section-title">Principal</span>
+                            <a href="<?php echo esc_url($this->get_shortcode_url()); ?>" class="nav-item <?php echo $active_page === 'dashboard' ? 'active' : ''; ?>">
+                                <span class="nav-icon">📊</span>
+                                <span class="nav-text">Dashboard</span>
+                            </a>
+                            <a href="<?php echo esc_url($this->get_shortcode_url('nueva')); ?>" class="nav-item <?php echo $active_page === 'nueva' ? 'active' : ''; ?>">
+                                <span class="nav-icon">➕</span>
+                                <span class="nav-text">Nueva Cotización</span>
+                            </a>
+                            <a href="<?php echo esc_url($this->get_shortcode_url('lista')); ?>" class="nav-item <?php echo $active_page === 'lista' ? 'active' : ''; ?>">
+                                <span class="nav-icon">📋</span>
+                                <span class="nav-text">Mis Cotizaciones</span>
+                            </a>
+                        </div>
+
+                        <div class="nav-section">
+                            <span class="nav-section-title">Gestión</span>
+                            <a href="<?php echo esc_url($this->get_shortcode_url('proveedores')); ?>" class="nav-item <?php echo $active_page === 'proveedores' ? 'active' : ''; ?>">
+                                <span class="nav-icon">🏢</span>
+                                <span class="nav-text">Proveedores</span>
+                            </a>
+                            <?php if ($is_admin): ?>
+                            <a href="<?php echo esc_url($this->get_shortcode_url('configuracion')); ?>" class="nav-item <?php echo $active_page === 'configuracion' ? 'active' : ''; ?>">
+                                <span class="nav-icon">⚙️</span>
+                                <span class="nav-text">Configuración</span>
+                            </a>
+                            <?php endif; ?>
+                        </div>
+                    </nav>
+
+                    <div class="sidebar-user">
+                        <div class="user-avatar"><?php echo esc_html($initials); ?></div>
+                        <div class="user-info">
+                            <span class="user-name"><?php echo esc_html($user->display_name); ?></span>
+                            <span class="user-role"><?php echo $is_admin ? 'Administrador' : 'Vendedor'; ?></span>
+                        </div>
+                        <a href="<?php echo esc_url($this->get_shortcode_url('logout')); ?>" class="btn-logout-small" title="Cerrar sesión">🚪</a>
+                    </div>
+                </aside>
+
+                <!-- Overlay for mobile -->
+                <div class="sidebar-overlay"></div>
+
+                <!-- Main Content -->
+                <div class="main-wrapper">
+                    <header class="header-bar">
+                        <button class="mobile-menu-btn" type="button">☰</button>
+                        <h1 class="header-title"><?php echo esc_html($title); ?></h1>
+                        <div class="header-actions">
+                            <?php if ($active_page !== 'nueva'): ?>
+                            <a href="<?php echo esc_url($this->get_shortcode_url('nueva')); ?>" class="btn btn-success btn-sm">+ Nueva</a>
+                            <?php endif; ?>
+                        </div>
+                    </header>
+                    <main class="main-content">
+        <?php
+    }
+
+    /**
+     * Footer para shortcode
+     */
+    private function render_footer_shortcode($extra_scripts = '') {
+        $dashboard_url = $this->get_shortcode_url();
+        ?>
+                    </main>
+                </div><!-- .main-wrapper -->
+            </div><!-- .app-layout -->
+        </div><!-- .rtt-seller-panel-wrapper -->
+
+        <script>
+            var rttAjax = {
+                url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                dashboardUrl: '<?php echo esc_url($dashboard_url); ?>'
+            };
+        </script>
+        <?php
+        wp_enqueue_script('jquery');
+        wp_enqueue_script('rtt-seller-panel-js', RTT_RESERVAS_PLUGIN_URL . 'assets/js/seller-panel.js', ['jquery'], RTT_RESERVAS_VERSION, true);
+
+        if (!empty($extra_scripts)):
+        ?>
+        <script>
+            jQuery(document).ready(function($) {
+                <?php echo $extra_scripts; ?>
+            });
+        </script>
+        <?php
+        endif;
+    }
+
+    /**
+     * Login para shortcode
+     */
+    private function render_login_shortcode() {
+        wp_enqueue_style('rtt-seller-panel-fonts', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap', [], null);
+        wp_enqueue_style('rtt-seller-panel-css', RTT_RESERVAS_PLUGIN_URL . 'assets/css/seller-panel.css', [], RTT_RESERVAS_VERSION);
+        ?>
+        <div class="rtt-seller-panel-wrapper">
+            <div class="login-box" style="margin: 40px auto;">
+                <div class="login-header">
+                    <div class="brand-icon">RTT</div>
+                    <h1>Panel de Vendedor</h1>
+                    <p>Ready To Travel Peru</p>
+                </div>
+                <form id="login-form" class="login-form">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required placeholder="tu@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Contraseña</label>
+                        <input type="password" id="password" name="password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-login">Iniciar Sesión</button>
+                    <div id="login-error" class="login-error" style="display: none;"></div>
+                </form>
+            </div>
+        </div>
+        <script>
+            var rttAjax = { url: '<?php echo admin_url('admin-ajax.php'); ?>' };
+        </script>
+        <?php
+        wp_enqueue_script('jquery');
+        wp_enqueue_script('rtt-seller-panel-js', RTT_RESERVAS_PLUGIN_URL . 'assets/js/seller-panel.js', ['jquery'], RTT_RESERVAS_VERSION, true);
+    }
+
+    /**
+     * Dashboard para shortcode
+     */
+    private function render_dashboard_shortcode() {
+        $user = wp_get_current_user();
+        $stats = RTT_Database::get_cotizaciones_stats($user->ID);
+        $recientes = RTT_Database::get_cotizaciones(['limit' => 5, 'vendedor_id' => $user->ID]);
+
+        $this->render_header_shortcode('Dashboard', 'dashboard');
+        ?>
+        <div class="dashboard-welcome">
+            <h2>¡Bienvenido, <?php echo esc_html($user->display_name); ?>!</h2>
+            <p>Resumen de tus cotizaciones</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📝</div>
+                <div class="stat-content">
+                    <span class="stat-number"><?php echo intval($stats['total']); ?></span>
+                    <span class="stat-label">Total Cotizaciones</span>
+                </div>
+            </div>
+            <div class="stat-card stat-warning">
+                <div class="stat-icon">📤</div>
+                <div class="stat-content">
+                    <span class="stat-number"><?php echo intval($stats['enviadas']); ?></span>
+                    <span class="stat-label">Enviadas</span>
+                </div>
+            </div>
+            <div class="stat-card stat-success">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <span class="stat-number"><?php echo intval($stats['aceptadas']); ?></span>
+                    <span class="stat-label">Aceptadas</span>
+                </div>
+            </div>
+            <div class="stat-card stat-info">
+                <div class="stat-icon">💰</div>
+                <div class="stat-content">
+                    <span class="stat-number">$<?php echo number_format($stats['monto_total'], 0); ?></span>
+                    <span class="stat-label">Monto Total</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <a href="<?php echo esc_url($this->get_shortcode_url('nueva')); ?>" class="quick-action-card">
+                <span class="quick-action-icon">➕</span>
+                <span class="quick-action-text">Nueva Cotización</span>
+            </a>
+            <a href="<?php echo esc_url($this->get_shortcode_url('lista')); ?>" class="quick-action-card">
+                <span class="quick-action-icon">📋</span>
+                <span class="quick-action-text">Ver Todas</span>
+            </a>
+            <a href="<?php echo esc_url($this->get_shortcode_url('proveedores')); ?>" class="quick-action-card">
+                <span class="quick-action-icon">🏢</span>
+                <span class="quick-action-text">Proveedores</span>
+            </a>
+        </div>
+
+        <?php if (!empty($recientes)): ?>
+        <div class="section-card">
+            <div class="section-header">
+                <div class="section-title">
+                    <span class="section-title-icon">🕒</span>
+                    Cotizaciones Recientes
+                </div>
+                <a href="<?php echo esc_url($this->get_shortcode_url('lista')); ?>" class="btn btn-sm btn-secondary">Ver todas</a>
+            </div>
+            <div class="section-body" style="padding: 0;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Cliente</th>
+                            <th>Tour</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($recientes as $cot): ?>
+                        <tr>
+                            <td><a href="<?php echo esc_url($this->get_shortcode_url('ver') . '&id=' . $cot->id); ?>" class="table-code"><?php echo esc_html($cot->codigo); ?></a></td>
+                            <td>
+                                <div class="table-client">
+                                    <span class="table-client-name"><?php echo esc_html($cot->cliente_nombre); ?></span>
+                                    <span class="table-client-email"><?php echo esc_html($cot->cliente_email); ?></span>
+                                </div>
+                            </td>
+                            <td class="table-tour"><?php echo esc_html($cot->tour); ?></td>
+                            <td class="table-price"><?php echo esc_html($cot->moneda); ?> <?php echo number_format($cot->precio_total, 2); ?></td>
+                            <td><span class="badge badge-<?php echo esc_attr($cot->estado); ?>"><?php echo esc_html(ucfirst($cot->estado)); ?></span></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php endif; ?>
+        <?php
+        $this->render_footer_shortcode();
+    }
+
+    /**
+     * Nueva cotización para shortcode
+     */
+    private function render_nueva_cotizacion_shortcode() {
+        $tours = RTT_Tours::get_tours();
+        $options = get_option('rtt_reservas_options', []);
+        $tipo_cambio = $options['tipo_cambio'] ?? 3.70;
+
+        $this->render_header_shortcode('Nueva Cotización', 'nueva');
+        ?>
+        <div class="form-container">
+            <form id="cotizacion-form" class="cotizacion-form">
+                <input type="hidden" name="id" value="0">
+
+                <?php $this->render_cotizacion_form_fields($tours, null, $tipo_cambio); ?>
+
+                <div class="form-actions">
+                    <button type="submit" name="accion" value="guardar" class="btn btn-secondary">💾 Guardar Borrador</button>
+                    <button type="submit" name="accion" value="enviar" class="btn btn-primary">📧 Guardar y Enviar</button>
+                    <a href="<?php echo esc_url($this->get_shortcode_url()); ?>" class="btn btn-outline">Cancelar</a>
+                </div>
+
+                <div id="form-message" class="form-message" style="display: none;"></div>
+            </form>
+        </div>
+        <?php
+        $this->render_footer_shortcode($this->get_cotizacion_form_scripts_shortcode());
+    }
+
+    /**
+     * Editar cotización para shortcode
+     */
+    private function render_editar_cotizacion_shortcode() {
+        $id = intval($_GET['id'] ?? 0);
+        $cotizacion = RTT_Database::get_cotizacion($id);
+
+        if (!$cotizacion) {
+            $this->render_header_shortcode('Error', 'editar');
+            echo '<div class="empty-state"><h3>Cotización no encontrada</h3><a href="' . esc_url($this->get_shortcode_url('lista')) . '" class="btn btn-primary">Volver a la lista</a></div>';
+            $this->render_footer_shortcode();
+            return;
+        }
+
+        $tours = RTT_Tours::get_tours();
+        $options = get_option('rtt_reservas_options', []);
+        $tipo_cambio = $options['tipo_cambio'] ?? 3.70;
+
+        $this->render_header_shortcode('Editar: ' . $cotizacion->codigo, 'editar');
+        ?>
+        <div class="form-container">
+            <form id="cotizacion-form" class="cotizacion-form">
+                <input type="hidden" name="id" value="<?php echo $cotizacion->id; ?>">
+
+                <?php $this->render_cotizacion_form_fields($tours, $cotizacion, $tipo_cambio); ?>
+
+                <div class="form-actions">
+                    <button type="submit" name="accion" value="guardar" class="btn btn-secondary">💾 Guardar</button>
+                    <button type="submit" name="accion" value="enviar" class="btn btn-primary">📧 Guardar y Enviar</button>
+                    <button type="button" class="btn btn-outline btn-preview-pdf">👁️ Ver PDF</button>
+                    <a href="<?php echo esc_url($this->get_shortcode_url('lista')); ?>" class="btn btn-outline">Cancelar</a>
+                </div>
+
+                <div id="form-message" class="form-message" style="display: none;"></div>
+            </form>
+        </div>
+        <?php
+        $this->render_footer_shortcode($this->get_cotizacion_form_scripts_shortcode());
+    }
+
+    /**
+     * Ver cotización para shortcode
+     */
+    private function render_ver_cotizacion_shortcode() {
+        $id = intval($_GET['id'] ?? 0);
+        $cotizacion = RTT_Database::get_cotizacion($id);
+
+        if (!$cotizacion) {
+            $this->render_header_shortcode('Error', 'ver');
+            echo '<div class="empty-state"><h3>Cotización no encontrada</h3><a href="' . esc_url($this->get_shortcode_url('lista')) . '" class="btn btn-primary">Volver a la lista</a></div>';
+            $this->render_footer_shortcode();
+            return;
+        }
+
+        $this->render_header_shortcode('Cotización: ' . $cotizacion->codigo, 'ver');
+        $this->render_cotizacion_detail($cotizacion);
+        $this->render_footer_shortcode();
+    }
+
+    /**
+     * Lista de cotizaciones para shortcode
+     */
+    private function render_lista_cotizaciones_shortcode() {
+        $user = wp_get_current_user();
+        $estado = sanitize_text_field($_GET['estado'] ?? '');
+        $buscar = sanitize_text_field($_GET['buscar'] ?? '');
+
+        $args = ['vendedor_id' => $user->ID];
+        if (!empty($estado)) $args['estado'] = $estado;
+        if (!empty($buscar)) $args['buscar'] = $buscar;
+
+        $cotizaciones = RTT_Database::get_cotizaciones($args);
+
+        $this->render_header_shortcode('Mis Cotizaciones', 'lista');
+        ?>
+        <div class="lista-container">
+            <div class="section-header">
+                <div class="section-title">
+                    <span class="section-title-icon">📋</span>
+                    Lista de Cotizaciones
+                </div>
+                <a href="<?php echo esc_url($this->get_shortcode_url('nueva')); ?>" class="btn btn-primary">+ Nueva</a>
+            </div>
+
+            <div class="filters">
+                <form method="get" class="filter-form">
+                    <input type="hidden" name="panel" value="lista">
+                    <select name="estado" onchange="this.form.submit()">
+                        <option value="">Todos los estados</option>
+                        <option value="borrador" <?php selected($estado, 'borrador'); ?>>Borrador</option>
+                        <option value="enviada" <?php selected($estado, 'enviada'); ?>>Enviada</option>
+                        <option value="aceptada" <?php selected($estado, 'aceptada'); ?>>Aceptada</option>
+                        <option value="vencida" <?php selected($estado, 'vencida'); ?>>Vencida</option>
+                    </select>
+                    <input type="text" name="buscar" placeholder="Buscar..." value="<?php echo esc_attr($buscar); ?>">
+                    <?php if (!empty($estado) || !empty($buscar)): ?>
+                    <a href="<?php echo esc_url($this->get_shortcode_url('lista')); ?>" class="btn btn-sm btn-secondary">Limpiar</a>
+                    <?php endif; ?>
+                </form>
+            </div>
+
+            <?php if (empty($cotizaciones)): ?>
+            <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <h3>No hay cotizaciones</h3>
+                <p>Crea tu primera cotización</p>
+                <a href="<?php echo esc_url($this->get_shortcode_url('nueva')); ?>" class="btn btn-primary">+ Nueva Cotización</a>
+            </div>
+            <?php else: ?>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Cliente</th>
+                        <th>Tour</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($cotizaciones as $cot): ?>
+                    <tr>
+                        <td><span class="table-code"><?php echo esc_html($cot->codigo); ?></span></td>
+                        <td>
+                            <div class="table-client">
+                                <span class="table-client-name"><?php echo esc_html($cot->cliente_nombre); ?></span>
+                                <span class="table-client-email"><?php echo esc_html($cot->cliente_email); ?></span>
+                            </div>
+                        </td>
+                        <td class="table-tour"><?php echo esc_html($cot->tour); ?></td>
+                        <td class="table-price"><?php echo esc_html($cot->moneda); ?> <?php echo number_format($cot->precio_total, 2); ?></td>
+                        <td><span class="badge badge-<?php echo esc_attr($cot->estado); ?>"><?php echo esc_html(ucfirst($cot->estado)); ?></span></td>
+                        <td><?php echo date('d/m/Y', strtotime($cot->created_at)); ?></td>
+                        <td>
+                            <div class="table-actions">
+                                <a href="<?php echo esc_url($this->get_shortcode_url('ver') . '&id=' . $cot->id); ?>" class="btn-icon btn-icon-edit" title="Ver">👁️</a>
+                                <a href="<?php echo esc_url($this->get_shortcode_url('editar') . '&id=' . $cot->id); ?>" class="btn-icon btn-icon-edit" title="Editar">✏️</a>
+                                <button type="button" class="btn-icon btn-icon-delete btn-delete-cotizacion" data-id="<?php echo $cot->id; ?>" data-codigo="<?php echo esc_attr($cot->codigo); ?>" title="Eliminar">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php endif; ?>
+        </div>
+        <?php
+        $this->render_footer_shortcode();
+    }
+
+    /**
+     * Configuración para shortcode
+     */
+    private function render_configuracion_shortcode() {
+        if (!current_user_can('manage_options')) {
+            $this->render_header_shortcode('Sin acceso', 'configuracion');
+            echo '<div class="empty-state"><h3>No tienes permisos</h3></div>';
+            $this->render_footer_shortcode();
+            return;
+        }
+
+        $options = get_option('rtt_reservas_options', []);
+
+        $this->render_header_shortcode('Configuración', 'configuracion');
+        $this->render_configuracion_form($options);
+        $this->render_footer_shortcode("
+            $('#config-form').on('submit', function(e) {
+                e.preventDefault();
+                var btn = $(this).find('button[type=submit]');
+                btn.prop('disabled', true).text('Guardando...');
+                $('#form-message').hide();
+
+                $.post(rttAjax.url, {
+                    action: 'rtt_save_configuracion',
+                    tipo_cambio: $('#tipo_cambio').val(),
+                    cotizacion_formas_pago: $('#cotizacion_formas_pago').val(),
+                    cotizacion_terminos: $('#cotizacion_terminos').val()
+                }, function(response) {
+                    if (response.success) {
+                        $('#form-message').removeClass('error').addClass('success').text('Configuración guardada').show();
+                    } else {
+                        $('#form-message').removeClass('success').addClass('error').text(response.data.message).show();
+                    }
+                    btn.prop('disabled', false).text('Guardar Configuración');
+                });
+            });
+        ");
+    }
+
+    /**
+     * Proveedores para shortcode
+     */
+    private function render_proveedores_shortcode() {
+        $tipos = RTT_Database::get_tipos_proveedores();
+        $tipo_filtro = sanitize_text_field($_GET['tipo'] ?? '');
+        $buscar = sanitize_text_field($_GET['buscar'] ?? '');
+        $proveedores = RTT_Database::get_proveedores(['tipo' => $tipo_filtro]);
+
+        // Filtrar por búsqueda
+        if (!empty($buscar)) {
+            $proveedores = array_filter($proveedores, function($p) use ($buscar) {
+                $buscar_lower = strtolower($buscar);
+                return strpos(strtolower($p->nombre), $buscar_lower) !== false ||
+                       strpos(strtolower($p->contacto), $buscar_lower) !== false;
+            });
+        }
+
+        // Stats
+        $all_proveedores = RTT_Database::get_proveedores([]);
+        $stats = ['total' => count($all_proveedores)];
+        foreach ($tipos as $key => $label) {
+            $stats[$key] = 0;
+        }
+        foreach ($all_proveedores as $p) {
+            if (isset($stats[$p->tipo])) {
+                $stats[$p->tipo]++;
+            }
+        }
+
+        $tipo_icons = [
+            'guia' => '👨‍🏫', 'transporte' => '🚐', 'restaurante' => '🍽️',
+            'hotel' => '🏨', 'actividad' => '🎯', 'entrada' => '🎟️', 'otro' => '📦'
+        ];
+
+        $this->render_header_shortcode('Proveedores', 'proveedores');
+        ?>
+        <div class="lista-container">
+            <div class="section-header">
+                <div class="section-title">
+                    <span class="section-title-icon">👥</span>
+                    Directorio de Proveedores
+                </div>
+                <button type="button" class="btn btn-primary" id="btn-nuevo-proveedor">+ Nuevo Proveedor</button>
+            </div>
+
+            <div class="provider-stats">
+                <a href="<?php echo esc_url($this->get_shortcode_url('proveedores')); ?>" class="provider-stat <?php echo empty($tipo_filtro) ? 'active' : ''; ?>">
+                    <div class="provider-stat-icon">📊</div>
+                    <div class="provider-stat-count"><?php echo $stats['total']; ?></div>
+                    <div class="provider-stat-label">Total</div>
+                </a>
+                <?php foreach ($tipos as $key => $label): ?>
+                <a href="<?php echo esc_url($this->get_shortcode_url('proveedores') . '&tipo=' . $key); ?>" class="provider-stat <?php echo $tipo_filtro === $key ? 'active' : ''; ?>">
+                    <div class="provider-stat-icon"><?php echo $tipo_icons[$key] ?? '📦'; ?></div>
+                    <div class="provider-stat-count"><?php echo $stats[$key] ?? 0; ?></div>
+                    <div class="provider-stat-label"><?php echo esc_html($label); ?></div>
+                </a>
+                <?php endforeach; ?>
+            </div>
+
+            <div class="filters">
+                <form method="get" class="filter-form provider-filters">
+                    <input type="hidden" name="panel" value="proveedores">
+                    <div class="filter-group">
+                        <label>Tipo:</label>
+                        <select name="tipo" onchange="this.form.submit()">
+                            <option value="">Todos</option>
+                            <?php foreach ($tipos as $key => $label): ?>
+                            <option value="<?php echo esc_attr($key); ?>" <?php selected($tipo_filtro, $key); ?>><?php echo esc_html($label); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="filter-group search-input-wrapper">
+                        <input type="text" name="buscar" placeholder="Buscar..." value="<?php echo esc_attr($buscar); ?>">
+                    </div>
+                </form>
+            </div>
+
+            <?php if (empty($proveedores)): ?>
+            <div class="empty-state-providers">
+                <div class="empty-icon">👥</div>
+                <h3>No hay proveedores</h3>
+                <p>Agrega tu primer proveedor</p>
+                <button type="button" class="btn btn-primary" id="btn-nuevo-proveedor-empty">+ Agregar</button>
+            </div>
+            <?php else: ?>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Proveedor</th>
+                        <th>Contacto</th>
+                        <th>Teléfono</th>
+                        <th>Costo</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($proveedores as $prov): ?>
+                    <tr data-id="<?php echo $prov->id; ?>">
+                        <td><span class="badge badge-<?php echo esc_attr($prov->tipo); ?>"><?php echo $tipo_icons[$prov->tipo] ?? ''; ?> <?php echo esc_html($tipos[$prov->tipo] ?? $prov->tipo); ?></span></td>
+                        <td><strong><?php echo esc_html($prov->nombre); ?></strong></td>
+                        <td><?php echo esc_html($prov->contacto ?: '—'); ?></td>
+                        <td><?php echo esc_html($prov->telefono ?: '—'); ?></td>
+                        <td><?php echo $prov->costo_base > 0 ? esc_html($prov->moneda) . ' ' . number_format($prov->costo_base, 2) : '—'; ?></td>
+                        <td><?php echo $prov->activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'; ?></td>
+                        <td>
+                            <div class="table-actions">
+                                <button type="button" class="btn-icon btn-icon-edit btn-edit" data-id="<?php echo $prov->id; ?>">✏️</button>
+                                <button type="button" class="btn-icon btn-icon-delete btn-delete" data-id="<?php echo $prov->id; ?>">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php endif; ?>
+        </div>
+
+        <!-- Modal Proveedor -->
+        <div id="modal-proveedor" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-title">Nuevo Proveedor</h2>
+                    <button type="button" class="modal-close">&times;</button>
+                </div>
+                <form id="proveedor-form">
+                    <input type="hidden" name="id" value="0">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tipo *</label>
+                            <select id="prov_tipo" name="tipo" required>
+                                <?php foreach ($tipos as $key => $label): ?>
+                                <option value="<?php echo esc_attr($key); ?>"><?php echo ($tipo_icons[$key] ?? '') . ' ' . esc_html($label); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Nombre *</label>
+                            <input type="text" id="prov_nombre" name="nombre" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Contacto</label>
+                            <input type="text" id="prov_contacto" name="contacto">
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono</label>
+                            <input type="text" id="prov_telefono" name="telefono">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="prov_email" name="email">
+                        </div>
+                        <div class="form-group">
+                            <label>Costo base</label>
+                            <div class="input-group">
+                                <select id="prov_moneda" name="moneda">
+                                    <option value="PEN">S/</option>
+                                    <option value="USD">$</option>
+                                </select>
+                                <input type="number" id="prov_costo" name="costo_base" value="0" min="0" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notas</label>
+                        <textarea id="prov_notas" name="notas" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="prov_activo" name="activo" value="1" checked>
+                            <span>Proveedor activo</span>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <?php
+        $this->render_footer_shortcode($this->get_proveedores_scripts());
+    }
+
+    /**
+     * Scripts de cotización para shortcode
+     */
+    private function get_cotizacion_form_scripts_shortcode() {
+        return $this->get_cotizacion_form_scripts();
     }
 
     /**
