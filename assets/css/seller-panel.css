@@ -217,23 +217,26 @@ body {
 }
 
 .btn-logout-small {
-    width: 36px;
-    height: 36px;
-    background: rgba(255,255,255,0.1);
-    border: none;
+    width: 40px;
+    height: 40px;
+    background: rgba(231, 76, 60, 0.2);
+    border: 1px solid rgba(231, 76, 60, 0.4);
     border-radius: var(--radius-sm);
-    color: rgba(255,255,255,0.7);
+    color: #ff6b6b;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
     transition: var(--transition);
+    font-size: 18px;
 }
 
 .btn-logout-small:hover {
     background: var(--danger);
+    border-color: var(--danger);
     color: white;
+    transform: scale(1.05);
 }
 
 /* Main Content Area */
