@@ -731,21 +731,21 @@ class RTT_Seller_Panel {
                 <tbody>
                     <?php foreach ($cotizaciones as $cot): ?>
                     <tr>
-                        <td><span class="table-code"><?php echo esc_html($cot->codigo); ?></span></td>
-                        <td>
+                        <td data-label="Código"><span class="table-code"><?php echo esc_html($cot->codigo); ?></span></td>
+                        <td data-label="Cliente">
                             <div class="table-client">
                                 <span class="table-client-name"><?php echo esc_html($cot->cliente_nombre); ?></span>
                                 <span class="table-client-email"><?php echo esc_html($cot->cliente_email); ?></span>
                             </div>
                         </td>
-                        <td class="table-tour"><?php echo esc_html($cot->tour); ?></td>
-                        <td class="table-price"><?php echo esc_html($cot->moneda); ?> <?php echo number_format($cot->precio_total, 2); ?></td>
-                        <td><span class="badge badge-<?php echo esc_attr($cot->estado); ?>"><?php echo esc_html(ucfirst($cot->estado)); ?></span></td>
-                        <td><?php echo date('d/m/Y', strtotime($cot->fecha_creacion)); ?></td>
-                        <td>
+                        <td data-label="Tour" class="table-tour"><?php echo esc_html($cot->tour); ?></td>
+                        <td data-label="Total" class="table-price"><?php echo esc_html($cot->moneda); ?> <?php echo number_format($cot->precio_total, 2); ?></td>
+                        <td data-label="Estado"><span class="badge badge-<?php echo esc_attr($cot->estado); ?>"><?php echo esc_html(ucfirst($cot->estado)); ?></span></td>
+                        <td data-label="Fecha"><?php echo date('d/m/Y', strtotime($cot->fecha_creacion)); ?></td>
+                        <td data-label="">
                             <div class="table-actions">
-                                <a href="<?php echo esc_url($this->get_shortcode_url('ver') . '&id=' . $cot->id); ?>" class="btn-icon btn-icon-edit" title="Ver">👁️</a>
-                                <a href="<?php echo esc_url($this->get_shortcode_url('editar') . '&id=' . $cot->id); ?>" class="btn-icon btn-icon-edit" title="Editar">✏️</a>
+                                <a href="<?php echo esc_url($this->get_shortcode_url('ver') . '&id=' . $cot->id); ?>" class="btn-icon" title="Ver">👁️</a>
+                                <a href="<?php echo esc_url($this->get_shortcode_url('editar') . '&id=' . $cot->id); ?>" class="btn-icon" title="Editar">✏️</a>
                                 <button type="button" class="btn-icon btn-icon-delete btn-delete-cotizacion" data-id="<?php echo $cot->id; ?>" data-codigo="<?php echo esc_attr($cot->codigo); ?>" title="Eliminar">🗑️</button>
                             </div>
                         </td>
@@ -969,15 +969,15 @@ class RTT_Seller_Panel {
                 <tbody>
                     <?php foreach ($proveedores as $prov): ?>
                     <tr data-id="<?php echo $prov->id; ?>">
-                        <td><span class="badge badge-<?php echo esc_attr($prov->tipo); ?>"><?php echo $tipo_icons[$prov->tipo] ?? ''; ?> <?php echo esc_html($tipos[$prov->tipo] ?? $prov->tipo); ?></span></td>
-                        <td><strong><?php echo esc_html($prov->nombre); ?></strong></td>
-                        <td><?php echo esc_html($prov->contacto ?: '—'); ?></td>
-                        <td><?php echo esc_html($prov->telefono ?: '—'); ?></td>
-                        <td><?php echo $prov->costo_base > 0 ? esc_html($prov->moneda) . ' ' . number_format($prov->costo_base, 2) : '—'; ?></td>
-                        <td><?php echo $prov->activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'; ?></td>
-                        <td>
+                        <td data-label="Tipo"><span class="badge badge-<?php echo esc_attr($prov->tipo); ?>"><?php echo $tipo_icons[$prov->tipo] ?? ''; ?> <?php echo esc_html($tipos[$prov->tipo] ?? $prov->tipo); ?></span></td>
+                        <td data-label="Proveedor"><strong><?php echo esc_html($prov->nombre); ?></strong></td>
+                        <td data-label="Contacto"><?php echo esc_html($prov->contacto ?: '—'); ?></td>
+                        <td data-label="Teléfono"><?php echo esc_html($prov->telefono ?: '—'); ?></td>
+                        <td data-label="Costo"><?php echo $prov->costo_base > 0 ? esc_html($prov->moneda) . ' ' . number_format($prov->costo_base, 2) : '—'; ?></td>
+                        <td data-label="Estado"><?php echo $prov->activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'; ?></td>
+                        <td data-label="">
                             <div class="table-actions">
-                                <button type="button" class="btn-icon btn-icon-edit btn-edit" data-id="<?php echo $prov->id; ?>">✏️</button>
+                                <button type="button" class="btn-icon btn-edit" data-id="<?php echo $prov->id; ?>">✏️</button>
                                 <button type="button" class="btn-icon btn-icon-delete btn-delete" data-id="<?php echo $prov->id; ?>">🗑️</button>
                             </div>
                         </td>

@@ -266,19 +266,36 @@
 }
 .rtt-panel-embedded .table-actions {
     display: flex !important;
-    gap: 5px !important;
+    gap: 8px !important;
 }
 .rtt-panel-embedded .btn-icon {
-    padding: 6px 10px !important;
-    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    border-radius: 8px !important;
     background: #f0f0f0 !important;
     border: none !important;
     cursor: pointer !important;
-    font-size: 14px !important;
+    font-size: 16px !important;
     text-decoration: none !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 .rtt-panel-embedded .btn-icon:hover {
     background: #e0e0e0 !important;
+}
+/* Botón eliminar con estilo diferenciado */
+.rtt-panel-embedded .btn-icon.btn-delete-cotizacion,
+.rtt-panel-embedded .btn-icon.btn-icon-delete {
+    background: #fff5f5 !important;
+    color: #dc3545 !important;
+    margin-left: 8px !important;
+}
+.rtt-panel-embedded .btn-icon.btn-delete-cotizacion:hover,
+.rtt-panel-embedded .btn-icon.btn-icon-delete:hover {
+    background: #dc3545 !important;
+    color: white !important;
 }
 
 /* Badges */
@@ -408,14 +425,60 @@
         justify-content: center !important;
     }
     .rtt-panel-embedded .dashboard-welcome h2 { font-size: 1.2rem !important; }
+    /* Convertir tabla a tarjetas en móvil */
     .rtt-panel-embedded .data-table {
         display: block !important;
-        overflow-x: auto !important;
     }
-    .rtt-panel-embedded .data-table th,
+    .rtt-panel-embedded .data-table thead {
+        display: none !important;
+    }
+    .rtt-panel-embedded .data-table tbody {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+    }
+    .rtt-panel-embedded .data-table tr {
+        display: block !important;
+        background: white !important;
+        border: 1px solid #e0e0e0 !important;
+        border-radius: 12px !important;
+        padding: 15px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+    }
     .rtt-panel-embedded .data-table td {
-        padding: 8px 10px !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 8px 0 !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+        font-size: 14px !important;
+    }
+    .rtt-panel-embedded .data-table td:last-child {
+        border-bottom: none !important;
+        padding-top: 12px !important;
+        margin-top: 8px !important;
+        border-top: 1px solid #e0e0e0 !important;
+    }
+    .rtt-panel-embedded .data-table td::before {
+        content: attr(data-label) !important;
+        font-weight: 600 !important;
+        color: #666 !important;
         font-size: 12px !important;
+        text-transform: uppercase !important;
+    }
+    .rtt-panel-embedded .table-actions {
+        justify-content: flex-end !important;
+        width: 100% !important;
+        gap: 12px !important;
+    }
+    .rtt-panel-embedded .btn-icon {
+        min-width: 48px !important;
+        min-height: 48px !important;
+        font-size: 18px !important;
+    }
+    .rtt-panel-embedded .btn-icon.btn-delete-cotizacion,
+    .rtt-panel-embedded .btn-icon.btn-icon-delete {
+        margin-left: 16px !important;
     }
     .rtt-panel-embedded .table-client-email { display: none !important; }
     .rtt-panel-embedded .form-row {
