@@ -219,7 +219,7 @@ body {
 .btn-logout-small {
     width: 40px;
     height: 40px;
-    background: rgba(231, 76, 60, 0.2);
+    background: rgba(231, 76, 60, 0.15);
     border: 1px solid rgba(231, 76, 60, 0.4);
     border-radius: var(--radius-sm);
     color: #ff6b6b;
@@ -229,14 +229,23 @@ body {
     justify-content: center;
     text-decoration: none;
     transition: var(--transition);
-    font-size: 18px;
+}
+
+.btn-logout-small svg {
+    width: 20px;
+    height: 20px;
+    stroke: #ff6b6b;
+    transition: var(--transition);
 }
 
 .btn-logout-small:hover {
     background: var(--danger);
     border-color: var(--danger);
-    color: white;
     transform: scale(1.05);
+}
+
+.btn-logout-small:hover svg {
+    stroke: white;
 }
 
 /* Main Content Area */
