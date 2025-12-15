@@ -722,7 +722,61 @@ class RTT_Seller_Panel {
         }
 
         $this->render_header_shortcode('Cotización: ' . $cotizacion->codigo, 'ver');
-        $this->render_cotizacion_detail($cotizacion);
+        ?>
+        <div class="cotizacion-detail">
+            <div class="detail-actions" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <a href="<?php echo esc_url($this->get_shortcode_url('editar') . '&id=' . $cotizacion->id); ?>" class="btn btn-primary">✏️ Editar</a>
+                <a href="<?php echo admin_url('admin-ajax.php?action=rtt_preview_cotizacion_pdf&id=' . $cotizacion->id); ?>" target="_blank" class="btn btn-secondary">📄 Ver PDF</a>
+                <a href="<?php echo esc_url($this->get_shortcode_url('lista')); ?>" class="btn btn-outline">← Volver</a>
+            </div>
+
+            <div class="detail-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div class="detail-card" style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <h3 style="margin-bottom: 15px; color: #333;">📋 Información General</h3>
+                    <p><strong>Código:</strong> <?php echo esc_html($cotizacion->codigo); ?></p>
+                    <p><strong>Estado:</strong> <span class="badge badge-<?php echo esc_attr($cotizacion->estado); ?>"><?php echo esc_html(ucfirst($cotizacion->estado)); ?></span></p>
+                    <p><strong>Fecha creación:</strong> <?php echo date('d/m/Y H:i', strtotime($cotizacion->fecha_creacion)); ?></p>
+                    <p><strong>Validez:</strong> <?php echo esc_html($cotizacion->validez_dias); ?> días</p>
+                </div>
+
+                <div class="detail-card" style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <h3 style="margin-bottom: 15px; color: #333;">👤 Cliente</h3>
+                    <p><strong>Nombre:</strong> <?php echo esc_html($cotizacion->cliente_nombre); ?></p>
+                    <p><strong>Email:</strong> <?php echo esc_html($cotizacion->cliente_email); ?></p>
+                    <p><strong>Teléfono:</strong> <?php echo esc_html($cotizacion->cliente_telefono ?: '-'); ?></p>
+                    <p><strong>País:</strong> <?php echo esc_html($cotizacion->cliente_pais ?: '-'); ?></p>
+                </div>
+
+                <div class="detail-card" style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <h3 style="margin-bottom: 15px; color: #333;">🗺️ Tour</h3>
+                    <p><strong>Tour:</strong> <?php echo esc_html($cotizacion->tour); ?></p>
+                    <p><strong>Fecha:</strong> <?php echo date('d/m/Y', strtotime($cotizacion->fecha_tour)); ?></p>
+                    <p><strong>Pasajeros:</strong> <?php echo esc_html($cotizacion->cantidad_pasajeros); ?></p>
+                </div>
+
+                <div class="detail-card" style="background: #e8f5e9; padding: 20px; border-radius: 10px;">
+                    <h3 style="margin-bottom: 15px; color: #333;">💰 Precios</h3>
+                    <p><strong>Precio unitario:</strong> <?php echo esc_html($cotizacion->moneda); ?> <?php echo number_format($cotizacion->precio_unitario, 2); ?></p>
+                    <p><strong>Descuento:</strong> <?php echo esc_html($cotizacion->descuento); ?><?php echo $cotizacion->descuento_tipo === 'porcentaje' ? '%' : ' ' . $cotizacion->moneda; ?></p>
+                    <p style="font-size: 1.2em; font-weight: bold; color: #27ae60;"><strong>Total:</strong> <?php echo esc_html($cotizacion->moneda); ?> <?php echo number_format($cotizacion->precio_total, 2); ?></p>
+                </div>
+            </div>
+
+            <?php if (!empty($cotizacion->notas)): ?>
+            <div class="detail-card" style="background: #fff3cd; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                <h3 style="margin-bottom: 10px; color: #333;">📝 Notas para el cliente</h3>
+                <p style="white-space: pre-line;"><?php echo esc_html($cotizacion->notas); ?></p>
+            </div>
+            <?php endif; ?>
+
+            <?php if (!empty($cotizacion->notas_internas)): ?>
+            <div class="detail-card" style="background: #f8d7da; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                <h3 style="margin-bottom: 10px; color: #333;">🔒 Notas internas (privado)</h3>
+                <p style="white-space: pre-line;"><?php echo esc_html($cotizacion->notas_internas); ?></p>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php
         $this->render_footer_shortcode();
     }
 
