@@ -1560,7 +1560,7 @@ class RTT_Seller_Panel {
                             <span class="user-name"><?php echo esc_html($user->display_name); ?></span>
                             <span class="user-role"><?php echo $is_admin ? 'Administrador' : 'Vendedor'; ?></span>
                         </div>
-                        <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/logout/'); ?>" class="btn-logout-small" title="Cerrar sesión">🚪</a>
+                        <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/logout/'); ?>" class="btn-logout-small" title="Cerrar sesión">⏻</a>
                     </div>
                 </aside>
 
