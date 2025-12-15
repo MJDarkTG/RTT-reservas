@@ -127,75 +127,159 @@ class RTT_Seller_Panel {
         wp_enqueue_style('rtt-seller-panel-fonts', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap', [], null);
         wp_enqueue_style('rtt-seller-panel-css', RTT_RESERVAS_PLUGIN_URL . 'assets/css/seller-panel.css', [], RTT_RESERVAS_VERSION);
         ?>
-        <div class="rtt-seller-panel-wrapper">
-            <div class="app-layout">
-                <!-- Sidebar -->
-                <aside class="sidebar">
-                    <div class="sidebar-header">
-                        <div class="sidebar-logo">RTT</div>
-                        <div class="sidebar-brand">
-                            <h1>Cotizador</h1>
-                            <span>Ready To Travel</span>
-                        </div>
-                    </div>
+        <style>
+            .rtt-panel-embedded {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                background: #f8f9fa;
+                padding: 20px;
+                border-radius: 12px;
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            .rtt-panel-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+                border-bottom: 2px solid #e9ecef;
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+            .rtt-panel-brand {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .rtt-panel-brand .logo {
+                background: linear-gradient(135deg, #D4A017, #B8860B);
+                color: white;
+                font-weight: 800;
+                padding: 8px 12px;
+                border-radius: 8px;
+                font-size: 14px;
+            }
+            .rtt-panel-brand h2 {
+                margin: 0;
+                font-size: 1.25rem;
+                color: #333;
+            }
+            .rtt-panel-user {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 14px;
+                color: #666;
+            }
+            .rtt-panel-user .avatar {
+                width: 36px;
+                height: 36px;
+                background: #007bff;
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+                font-size: 12px;
+            }
+            .rtt-panel-nav {
+                display: flex;
+                gap: 5px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+                background: white;
+                padding: 8px;
+                border-radius: 10px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            }
+            .rtt-panel-nav a {
+                padding: 10px 16px;
+                border-radius: 8px;
+                text-decoration: none;
+                color: #555;
+                font-size: 14px;
+                font-weight: 500;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .rtt-panel-nav a:hover {
+                background: #f0f0f0;
+                color: #333;
+            }
+            .rtt-panel-nav a.active {
+                background: linear-gradient(135deg, #D4A017, #B8860B);
+                color: white;
+            }
+            .rtt-panel-content {
+                background: white;
+                border-radius: 12px;
+                padding: 25px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            }
+            .rtt-panel-title {
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: #333;
+                margin: 0 0 20px 0;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .btn-logout-link {
+                color: #dc3545;
+                text-decoration: none;
+                font-size: 13px;
+                padding: 6px 12px;
+                border-radius: 6px;
+                transition: background 0.2s;
+            }
+            .btn-logout-link:hover {
+                background: #fff5f5;
+            }
+            @media (max-width: 768px) {
+                .rtt-panel-nav a span.nav-text { display: none; }
+                .rtt-panel-nav a { padding: 10px 12px; }
+            }
+        </style>
 
-                    <nav class="sidebar-nav">
-                        <div class="nav-section">
-                            <span class="nav-section-title">Principal</span>
-                            <a href="<?php echo esc_url($this->get_shortcode_url()); ?>" class="nav-item <?php echo $active_page === 'dashboard' ? 'active' : ''; ?>">
-                                <span class="nav-icon">📊</span>
-                                <span class="nav-text">Dashboard</span>
-                            </a>
-                            <a href="<?php echo esc_url($this->get_shortcode_url('nueva')); ?>" class="nav-item <?php echo $active_page === 'nueva' ? 'active' : ''; ?>">
-                                <span class="nav-icon">➕</span>
-                                <span class="nav-text">Nueva Cotización</span>
-                            </a>
-                            <a href="<?php echo esc_url($this->get_shortcode_url('lista')); ?>" class="nav-item <?php echo $active_page === 'lista' ? 'active' : ''; ?>">
-                                <span class="nav-icon">📋</span>
-                                <span class="nav-text">Mis Cotizaciones</span>
-                            </a>
-                        </div>
+        <div class="rtt-panel-embedded">
+            <div class="rtt-panel-header">
+                <div class="rtt-panel-brand">
+                    <span class="logo">RTT</span>
+                    <h2>Panel de Cotizaciones</h2>
+                </div>
+                <div class="rtt-panel-user">
+                    <span class="avatar"><?php echo esc_html($initials); ?></span>
+                    <span><?php echo esc_html($user->display_name); ?></span>
+                    <a href="<?php echo esc_url($this->get_shortcode_url('logout')); ?>" class="btn-logout-link">Salir</a>
+                </div>
+            </div>
 
-                        <div class="nav-section">
-                            <span class="nav-section-title">Gestión</span>
-                            <a href="<?php echo esc_url($this->get_shortcode_url('proveedores')); ?>" class="nav-item <?php echo $active_page === 'proveedores' ? 'active' : ''; ?>">
-                                <span class="nav-icon">🏢</span>
-                                <span class="nav-text">Proveedores</span>
-                            </a>
-                            <?php if ($is_admin): ?>
-                            <a href="<?php echo esc_url($this->get_shortcode_url('configuracion')); ?>" class="nav-item <?php echo $active_page === 'configuracion' ? 'active' : ''; ?>">
-                                <span class="nav-icon">⚙️</span>
-                                <span class="nav-text">Configuración</span>
-                            </a>
-                            <?php endif; ?>
-                        </div>
-                    </nav>
+            <nav class="rtt-panel-nav">
+                <a href="<?php echo esc_url($this->get_shortcode_url()); ?>" class="<?php echo $active_page === 'dashboard' ? 'active' : ''; ?>">
+                    <span>📊</span><span class="nav-text">Dashboard</span>
+                </a>
+                <a href="<?php echo esc_url($this->get_shortcode_url('nueva')); ?>" class="<?php echo $active_page === 'nueva' || $active_page === 'editar' ? 'active' : ''; ?>">
+                    <span>➕</span><span class="nav-text">Nueva</span>
+                </a>
+                <a href="<?php echo esc_url($this->get_shortcode_url('lista')); ?>" class="<?php echo $active_page === 'lista' || $active_page === 'ver' ? 'active' : ''; ?>">
+                    <span>📋</span><span class="nav-text">Cotizaciones</span>
+                </a>
+                <a href="<?php echo esc_url($this->get_shortcode_url('proveedores')); ?>" class="<?php echo $active_page === 'proveedores' ? 'active' : ''; ?>">
+                    <span>🏢</span><span class="nav-text">Proveedores</span>
+                </a>
+                <?php if ($is_admin): ?>
+                <a href="<?php echo esc_url($this->get_shortcode_url('configuracion')); ?>" class="<?php echo $active_page === 'configuracion' ? 'active' : ''; ?>">
+                    <span>⚙️</span><span class="nav-text">Config</span>
+                </a>
+                <?php endif; ?>
+            </nav>
 
-                    <div class="sidebar-user">
-                        <div class="user-avatar"><?php echo esc_html($initials); ?></div>
-                        <div class="user-info">
-                            <span class="user-name"><?php echo esc_html($user->display_name); ?></span>
-                            <span class="user-role"><?php echo $is_admin ? 'Administrador' : 'Vendedor'; ?></span>
-                        </div>
-                        <a href="<?php echo esc_url($this->get_shortcode_url('logout')); ?>" class="btn-logout-small" title="Cerrar sesión">🚪</a>
-                    </div>
-                </aside>
-
-                <!-- Overlay for mobile -->
-                <div class="sidebar-overlay"></div>
-
-                <!-- Main Content -->
-                <div class="main-wrapper">
-                    <header class="header-bar">
-                        <button class="mobile-menu-btn" type="button">☰</button>
-                        <h1 class="header-title"><?php echo esc_html($title); ?></h1>
-                        <div class="header-actions">
-                            <?php if ($active_page !== 'nueva'): ?>
-                            <a href="<?php echo esc_url($this->get_shortcode_url('nueva')); ?>" class="btn btn-success btn-sm">+ Nueva</a>
-                            <?php endif; ?>
-                        </div>
-                    </header>
-                    <main class="main-content">
+            <div class="rtt-panel-content">
+                <h1 class="rtt-panel-title"><?php echo esc_html($title); ?></h1>
         <?php
     }
 
@@ -205,10 +289,8 @@ class RTT_Seller_Panel {
     private function render_footer_shortcode($extra_scripts = '') {
         $dashboard_url = $this->get_shortcode_url();
         ?>
-                    </main>
-                </div><!-- .main-wrapper -->
-            </div><!-- .app-layout -->
-        </div><!-- .rtt-seller-panel-wrapper -->
+            </div><!-- .rtt-panel-content -->
+        </div><!-- .rtt-panel-embedded -->
 
         <script>
             var rttAjax = {
@@ -455,7 +537,8 @@ class RTT_Seller_Panel {
     private function render_dashboard_shortcode() {
         $user = wp_get_current_user();
         $stats = RTT_Database::get_cotizaciones_stats($user->ID);
-        $recientes = RTT_Database::get_cotizaciones(['limit' => 5, 'vendedor_id' => $user->ID]);
+        $result = RTT_Database::get_cotizaciones(['per_page' => 5, 'vendedor_id' => $user->ID]);
+        $recientes = $result['items'] ?? [];
 
         $this->render_header_shortcode('Dashboard', 'dashboard');
         ?>
@@ -489,8 +572,8 @@ class RTT_Seller_Panel {
             <div class="stat-card stat-info">
                 <div class="stat-icon">💰</div>
                 <div class="stat-content">
-                    <span class="stat-number">$<?php echo number_format($stats['monto_total'], 0); ?></span>
-                    <span class="stat-label">Monto Total</span>
+                    <span class="stat-number">$<?php echo number_format($stats['total_aceptado'] ?? 0, 0); ?></span>
+                    <span class="stat-label">Monto Aceptado</span>
                 </div>
             </div>
         </div>
