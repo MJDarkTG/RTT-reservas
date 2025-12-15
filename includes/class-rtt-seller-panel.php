@@ -88,9 +88,10 @@ class RTT_Seller_Panel {
                     break;
                 case 'logout':
                     wp_logout();
-                    $current_url = get_permalink();
-                    wp_redirect($current_url);
-                    exit;
+                    $redirect_url = get_permalink();
+                    echo '<script>window.location.href = "' . esc_url($redirect_url) . '";</script>';
+                    echo '<p style="text-align:center;padding:40px;">Cerrando sesión...</p>';
+                    break;
                 default:
                     $this->render_dashboard_shortcode();
             }
