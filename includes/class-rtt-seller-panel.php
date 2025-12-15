@@ -650,11 +650,12 @@ class RTT_Seller_Panel {
         $estado = sanitize_text_field($_GET['estado'] ?? '');
         $buscar = sanitize_text_field($_GET['buscar'] ?? '');
 
-        $args = ['vendedor_id' => $user->ID];
+        $args = ['vendedor_id' => $user->ID, 'per_page' => 50];
         if (!empty($estado)) $args['estado'] = $estado;
         if (!empty($buscar)) $args['buscar'] = $buscar;
 
-        $cotizaciones = RTT_Database::get_cotizaciones($args);
+        $result = RTT_Database::get_cotizaciones($args);
+        $cotizaciones = $result['items'] ?? [];
 
         $this->render_header_shortcode('Mis Cotizaciones', 'lista');
         ?>
@@ -717,7 +718,7 @@ class RTT_Seller_Panel {
                         <td class="table-tour"><?php echo esc_html($cot->tour); ?></td>
                         <td class="table-price"><?php echo esc_html($cot->moneda); ?> <?php echo number_format($cot->precio_total, 2); ?></td>
                         <td><span class="badge badge-<?php echo esc_attr($cot->estado); ?>"><?php echo esc_html(ucfirst($cot->estado)); ?></span></td>
-                        <td><?php echo date('d/m/Y', strtotime($cot->created_at)); ?></td>
+                        <td><?php echo date('d/m/Y', strtotime($cot->fecha_creacion)); ?></td>
                         <td>
                             <div class="table-actions">
                                 <a href="<?php echo esc_url($this->get_shortcode_url('ver') . '&id=' . $cot->id); ?>" class="btn-icon btn-icon-edit" title="Ver">👁️</a>
