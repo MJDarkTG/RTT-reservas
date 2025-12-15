@@ -579,7 +579,43 @@ body {
 /* Actions Column */
 .table-actions {
     display: flex;
-    gap: 8px;
+    gap: 10px;
+}
+
+.btn-icon {
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-light);
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    text-decoration: none;
+    min-width: 40px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.btn-icon:hover {
+    background: #e0e0e0;
+}
+
+/* Botón eliminar diferenciado */
+.btn-icon.btn-delete-cotizacion,
+.btn-icon.btn-icon-delete,
+.btn-icon.btn-delete {
+    background: rgba(231, 76, 60, 0.1);
+    color: var(--danger);
+    margin-left: 8px;
+}
+
+.btn-icon.btn-delete-cotizacion:hover,
+.btn-icon.btn-icon-delete:hover,
+.btn-icon.btn-delete:hover {
+    background: var(--danger);
+    color: white;
 }
 
 /* ========================================
@@ -1413,9 +1449,74 @@ body {
         flex-wrap: wrap;
     }
 
+    /* Convertir tabla a tarjetas en móvil */
     .data-table {
         display: block;
-        overflow-x: auto;
+    }
+
+    .data-table thead {
+        display: none;
+    }
+
+    .data-table tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .data-table tr {
+        display: block;
+        background: white;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        padding: 15px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .data-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 14px;
+    }
+
+    .data-table td:last-child {
+        border-bottom: none;
+        padding-top: 12px;
+        margin-top: 8px;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .data-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-transform: uppercase;
+    }
+
+    .table-actions {
+        justify-content: flex-end;
+        width: 100%;
+        gap: 12px;
+    }
+
+    .btn-icon {
+        min-width: 48px;
+        min-height: 48px;
+        font-size: 18px;
+    }
+
+    .btn-icon.btn-delete-cotizacion,
+    .btn-icon.btn-icon-delete,
+    .btn-icon.btn-delete {
+        margin-left: 16px;
+    }
+
+    .table-client-email {
+        display: none;
     }
 
     .section-header {
@@ -2016,5 +2117,164 @@ body {
     .table-actions {
         width: 100%;
         justify-content: center;
+    }
+}
+
+/* ===================================
+   MOBILE UX - Botones y Tablas
+   =================================== */
+
+/* Botones icon con tamaño táctil mínimo */
+.btn-icon {
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-light);
+    min-width: 40px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-light);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+}
+
+/* Botón eliminar diferenciado */
+.btn-icon.btn-delete,
+.btn-icon.btn-icon-delete,
+.btn-icon.btn-delete-cotizacion {
+    background: rgba(231, 76, 60, 0.1);
+    color: var(--danger);
+    border-color: rgba(231, 76, 60, 0.3);
+    margin-left: 8px;
+}
+
+.btn-icon.btn-delete:hover,
+.btn-icon.btn-icon-delete:hover,
+.btn-icon.btn-delete-cotizacion:hover {
+    background: rgba(231, 76, 60, 0.2);
+    border-color: var(--danger);
+}
+
+/* Botón WhatsApp */
+.btn-icon.btn-icon-whatsapp {
+    background: rgba(37, 211, 102, 0.1);
+    border-color: rgba(37, 211, 102, 0.3);
+}
+
+.btn-icon.btn-icon-whatsapp:hover {
+    background: rgba(37, 211, 102, 0.2);
+    border-color: #25D366;
+}
+
+/* Botón Send/Enviar */
+.btn-icon.btn-send {
+    background: rgba(52, 152, 219, 0.1);
+    border-color: rgba(52, 152, 219, 0.3);
+}
+
+.btn-icon.btn-send:hover {
+    background: rgba(52, 152, 219, 0.2);
+    border-color: var(--primary);
+}
+
+/* ===================================
+   MOBILE: Tabla Data-Table como Tarjetas
+   =================================== */
+@media (max-width: 768px) {
+    /* Ocultar cabecera de tabla */
+    .data-table thead {
+        display: none;
+    }
+
+    /* Tabla como flex column */
+    .data-table tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    /* Cada fila como tarjeta */
+    .data-table tbody tr {
+        display: block;
+        background: white;
+        border-radius: var(--radius-md);
+        padding: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: 1px solid var(--border-light);
+    }
+
+    /* Cada celda como fila flex */
+    .data-table tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 8px 0;
+        border: none;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .data-table tbody td:last-child {
+        border-bottom: none;
+        padding-top: 12px;
+        margin-top: 8px;
+    }
+
+    /* Label desde data-label */
+    .data-table tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-transform: uppercase;
+        flex-shrink: 0;
+        margin-right: 12px;
+    }
+
+    /* Celda de acciones sin label */
+    .data-table tbody td.actions::before {
+        content: none;
+    }
+
+    .data-table tbody td.actions {
+        justify-content: center;
+        border-top: 1px solid var(--border-light);
+    }
+
+    /* Botones más grandes para táctil */
+    .btn-icon {
+        min-width: 48px;
+        min-height: 48px;
+        font-size: 18px;
+    }
+
+    /* Mayor separación del botón eliminar */
+    .btn-icon.btn-delete,
+    .btn-icon.btn-icon-delete,
+    .btn-icon.btn-delete-cotizacion {
+        margin-left: 16px;
+    }
+
+    /* Table actions en móvil */
+    .data-table .table-actions {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        gap: 12px;
+    }
+
+    /* Nombres de cliente en móvil */
+    .table-client-name {
+        font-weight: 600;
+    }
+
+    .table-client-email {
+        font-size: 12px;
+        color: var(--text-secondary);
     }
 }

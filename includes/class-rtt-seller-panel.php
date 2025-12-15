@@ -2252,22 +2252,24 @@ class RTT_Seller_Panel {
                 <tbody>
                     <?php foreach ($cotizaciones['items'] as $cot): ?>
                     <tr>
-                        <td><strong><?php echo esc_html($cot->codigo); ?></strong></td>
-                        <td>
-                            <?php echo esc_html($cot->cliente_nombre); ?><br>
-                            <small><?php echo esc_html($cot->cliente_email); ?></small>
+                        <td data-label="Código"><strong><?php echo esc_html($cot->codigo); ?></strong></td>
+                        <td data-label="Cliente">
+                            <span class="table-client-name"><?php echo esc_html($cot->cliente_nombre); ?></span><br>
+                            <small class="table-client-email"><?php echo esc_html($cot->cliente_email); ?></small>
                         </td>
-                        <td><?php echo esc_html(substr($cot->tour, 0, 25)); ?>...</td>
-                        <td><?php echo date_i18n('d/m/Y', strtotime($cot->fecha_tour)); ?></td>
-                        <td><?php echo esc_html($cot->moneda); ?> <?php echo number_format($cot->precio_total, 2); ?></td>
-                        <td><span class="badge badge-<?php echo esc_attr($cot->estado); ?>"><?php echo esc_html(ucfirst($cot->estado)); ?></span></td>
-                        <td><?php echo date_i18n('d/m/Y', strtotime($cot->fecha_creacion)); ?></td>
-                        <td class="actions">
-                            <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/editar/?id=' . $cot->id); ?>" class="btn btn-sm">Editar</a>
-                            <?php if ($cot->estado === 'borrador'): ?>
-                            <button type="button" class="btn btn-sm btn-success btn-send" data-id="<?php echo $cot->id; ?>">Enviar</button>
-                            <?php endif; ?>
-                            <button type="button" class="btn btn-sm btn-danger btn-delete" data-id="<?php echo $cot->id; ?>">Eliminar</button>
+                        <td data-label="Tour"><?php echo esc_html(substr($cot->tour, 0, 25)); ?>...</td>
+                        <td data-label="Fecha Tour"><?php echo date_i18n('d/m/Y', strtotime($cot->fecha_tour)); ?></td>
+                        <td data-label="Total"><?php echo esc_html($cot->moneda); ?> <?php echo number_format($cot->precio_total, 2); ?></td>
+                        <td data-label="Estado"><span class="badge badge-<?php echo esc_attr($cot->estado); ?>"><?php echo esc_html(ucfirst($cot->estado)); ?></span></td>
+                        <td data-label="Creada"><?php echo date_i18n('d/m/Y', strtotime($cot->fecha_creacion)); ?></td>
+                        <td data-label="" class="actions">
+                            <div class="table-actions">
+                                <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/editar/?id=' . $cot->id); ?>" class="btn-icon" title="Editar">✏️</a>
+                                <?php if ($cot->estado === 'borrador'): ?>
+                                <button type="button" class="btn-icon btn-send" data-id="<?php echo $cot->id; ?>" title="Enviar">📤</button>
+                                <?php endif; ?>
+                                <button type="button" class="btn-icon btn-icon-delete btn-delete" data-id="<?php echo $cot->id; ?>" title="Eliminar">🗑️</button>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -3092,12 +3094,12 @@ class RTT_Seller_Panel {
                 <tbody>
                     <?php foreach ($proveedores as $prov): ?>
                     <tr data-id="<?php echo $prov->id; ?>">
-                        <td>
+                        <td data-label="Tipo">
                             <span class="badge badge-<?php echo esc_attr($prov->tipo); ?>">
                                 <?php echo $tipo_icons[$prov->tipo] ?? ''; ?> <?php echo esc_html($tipos[$prov->tipo] ?? $prov->tipo); ?>
                             </span>
                         </td>
-                        <td>
+                        <td data-label="Proveedor">
                             <div class="provider-name">
                                 <strong><?php echo esc_html($prov->nombre); ?></strong>
                                 <?php if (!empty($prov->notas)): ?>
@@ -3105,7 +3107,7 @@ class RTT_Seller_Panel {
                                 <?php endif; ?>
                             </div>
                         </td>
-                        <td>
+                        <td data-label="Contacto">
                             <div class="provider-contact">
                                 <?php if (!empty($prov->contacto)): ?>
                                 <span class="provider-contact-name"><?php echo esc_html($prov->contacto); ?></span>
@@ -3118,7 +3120,7 @@ class RTT_Seller_Panel {
                                 <?php endif; ?>
                             </div>
                         </td>
-                        <td>
+                        <td data-label="Teléfono">
                             <?php if (!empty($prov->telefono)): ?>
                             <div class="provider-phone">
                                 <span class="provider-phone-icon">📱</span>
@@ -3128,7 +3130,7 @@ class RTT_Seller_Panel {
                             <span class="text-muted">—</span>
                             <?php endif; ?>
                         </td>
-                        <td>
+                        <td data-label="Costo Base">
                             <?php if ($prov->costo_base > 0): ?>
                             <span class="provider-price <?php echo strtolower($prov->moneda); ?>">
                                 <?php echo $prov->moneda === 'PEN' ? 'S/' : '$'; ?> <?php echo number_format($prov->costo_base, 2); ?>
@@ -3137,14 +3139,14 @@ class RTT_Seller_Panel {
                             <span class="text-muted">—</span>
                             <?php endif; ?>
                         </td>
-                        <td>
+                        <td data-label="Estado">
                             <?php if ($prov->activo): ?>
                             <span class="badge badge-success">✓ Activo</span>
                             <?php else: ?>
                             <span class="badge badge-danger">Inactivo</span>
                             <?php endif; ?>
                         </td>
-                        <td>
+                        <td data-label="" class="actions">
                             <div class="table-actions">
                                 <?php if (!empty($prov->telefono)): ?>
                                 <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $prov->telefono); ?>" target="_blank" class="btn-icon btn-icon-whatsapp" title="WhatsApp">💬</a>
