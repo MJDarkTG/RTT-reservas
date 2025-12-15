@@ -21,16 +21,6 @@ class RTT_Seller_Panel {
     const SELLER_ROLE = 'rtt_vendedor';
 
     /**
-     * Vista actual del shortcode (para páginas separadas)
-     */
-    private $current_view = '';
-
-    /**
-     * URLs personalizadas para cada vista (configurables via shortcode)
-     */
-    private $custom_urls = [];
-
-    /**
      * Inicializar
      */
     public function init() {
@@ -63,45 +53,13 @@ class RTT_Seller_Panel {
 
     /**
      * Shortcode [rtt_seller_panel]
-     * Permite embeber el panel en cualquier página de WordPress/Elementor
-     *
-     * Uso básico: [rtt_seller_panel]
-     * Con vista fija: [rtt_seller_panel view="proveedores"]
-     * Con URLs personalizadas: [rtt_seller_panel url_dashboard="/mi-panel/" url_nueva="/mi-panel/nueva/" ...]
-     *
-     * Views disponibles: dashboard, nueva, editar, ver, lista, proveedores, configuracion
+     * Permite embeber el panel en cualquier página de WordPress
      */
     public function render_shortcode($atts = []) {
-        // Parsear atributos
-        $atts = shortcode_atts([
-            'view' => '', // Vista fija (opcional)
-            'url_dashboard' => '',
-            'url_nueva' => '',
-            'url_lista' => '',
-            'url_proveedores' => '',
-            'url_configuracion' => '',
-        ], $atts, 'rtt_seller_panel');
-
-        // Guardar URLs personalizadas
-        $this->custom_urls = [
-            'dashboard' => $atts['url_dashboard'],
-            'nueva' => $atts['url_nueva'],
-            'lista' => $atts['url_lista'],
-            'proveedores' => $atts['url_proveedores'],
-            'configuracion' => $atts['url_configuracion'],
-        ];
-
-        // Capturar output
         ob_start();
 
-        // Prioridad: 1) atributo view del shortcode, 2) parámetro GET, 3) dashboard
-        if (!empty($atts['view'])) {
-            $action = sanitize_text_field($atts['view']);
-            $this->current_view = $action; // Guardar vista fija
-        } else {
-            $action = sanitize_text_field($_GET['panel'] ?? 'dashboard');
-            $this->current_view = ''; // No hay vista fija
-        }
+        // Usar parámetro GET para la acción
+        $action = sanitize_text_field($_GET['panel'] ?? 'dashboard');
 
         // Si no está logueado, mostrar login
         if (!$this->can_access_panel()) {
@@ -143,31 +101,12 @@ class RTT_Seller_Panel {
 
     /**
      * Obtener URL base para shortcode
-     * Soporta URLs personalizadas para páginas separadas en Elementor
      */
     private function get_shortcode_url($action = '') {
-        // Si hay URL personalizada para esta acción, usarla
-        if (!empty($this->custom_urls[$action])) {
-            return home_url($this->custom_urls[$action]);
-        }
-
-        // Si estamos en una vista fija (página separada), la URL actual es la base
-        // Solo añadir parámetros si la acción es diferente a la vista actual
         $base_url = get_permalink();
-
         if (empty($action) || $action === 'dashboard') {
-            // Para dashboard, si hay URL personalizada usarla
-            if (!empty($this->custom_urls['dashboard'])) {
-                return home_url($this->custom_urls['dashboard']);
-            }
             return $base_url;
         }
-
-        // Si la acción es la misma que la vista fija actual, solo usar URL base
-        if (!empty($this->current_view) && $this->current_view === $action) {
-            return $base_url;
-        }
-
         return add_query_arg('panel', $action, $base_url);
     }
 
@@ -184,8 +123,9 @@ class RTT_Seller_Panel {
             $active_page = sanitize_text_field($_GET['panel'] ?? 'dashboard');
         }
 
-        // Cargar CSS directamente (funciona en shortcodes)
-        $css_url = RTT_RESERVAS_PLUGIN_URL . 'assets/css/seller-shortcode.css?v=' . RTT_RESERVAS_VERSION;
+        // Cargar CSS minificado para mejor rendimiento
+        $css_file = defined('WP_DEBUG') && WP_DEBUG ? 'seller-shortcode.css' : 'seller-shortcode.min.css';
+        $css_url = RTT_RESERVAS_PLUGIN_URL . 'assets/css/' . $css_file . '?v=' . RTT_RESERVAS_VERSION;
         echo '<link rel="stylesheet" href="' . esc_url($css_url) . '" type="text/css" media="all" />';
         ?>
 
@@ -244,7 +184,9 @@ class RTT_Seller_Panel {
         </script>
         <?php
         wp_enqueue_script('jquery');
-        wp_enqueue_script('rtt-seller-panel-js', RTT_RESERVAS_PLUGIN_URL . 'assets/js/seller-panel.js', ['jquery'], RTT_RESERVAS_VERSION, true);
+        // Cargar JS minificado para mejor rendimiento
+        $js_file = defined('WP_DEBUG') && WP_DEBUG ? 'seller-panel.js' : 'seller-panel.min.js';
+        wp_enqueue_script('rtt-seller-panel-js', RTT_RESERVAS_PLUGIN_URL . 'assets/js/' . $js_file, ['jquery'], RTT_RESERVAS_VERSION, true);
 
         if (!empty($extra_scripts)):
         ?>
@@ -988,9 +930,7 @@ class RTT_Seller_Panel {
 
             <div class="filters">
                 <form method="get" class="filter-form provider-filters">
-                    <?php if (empty($this->current_view)): ?>
                     <input type="hidden" name="panel" value="proveedores">
-                    <?php endif; ?>
                     <div class="filter-group">
                         <label>Tipo:</label>
                         <select name="tipo" onchange="this.form.submit()">
