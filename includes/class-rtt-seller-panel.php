@@ -21,6 +21,45 @@ class RTT_Seller_Panel {
     const SELLER_ROLE = 'rtt_vendedor';
 
     /**
+     * Get SVG icon by name
+     * @param string $name Icon name
+     * @param int $size Icon size (default 20)
+     * @return string SVG markup
+     */
+    public static function icon($name, $size = 20) {
+        $icons = [
+            'dashboard' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>',
+            'list' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>',
+            'file-text' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>',
+            'plus' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>',
+            'users' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
+            'settings' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>',
+            'edit' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>',
+            'trash' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>',
+            'send' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>',
+            'message' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>',
+            'trending-up' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>',
+            'dollar' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>',
+            'bar-chart' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>',
+            'menu' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>',
+            'calendar' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>',
+            'clock' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
+            'check' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+            'x' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
+            'eye' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+            'download' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>',
+            'file' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>',
+            'logout' => '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>',
+        ];
+
+        if (!isset($icons[$name])) {
+            return '';
+        }
+
+        return sprintf($icons[$name], $size, $size);
+    }
+
+    /**
      * Inicializar
      */
     public function init() {
@@ -144,20 +183,20 @@ class RTT_Seller_Panel {
 
             <nav class="rtt-panel-nav">
                 <a href="<?php echo esc_url($this->get_shortcode_url()); ?>" class="<?php echo $active_page === 'dashboard' ? 'active' : ''; ?>">
-                    <span>📊</span><span class="nav-text">Dashboard</span>
+                    <span><?php echo self::icon('dashboard', 18); ?></span><span class="nav-text">Dashboard</span>
                 </a>
                 <a href="<?php echo esc_url($this->get_shortcode_url('nueva')); ?>" class="<?php echo $active_page === 'nueva' || $active_page === 'editar' ? 'active' : ''; ?>">
-                    <span>➕</span><span class="nav-text">Nueva</span>
+                    <span><?php echo self::icon('plus', 18); ?></span><span class="nav-text">Nueva</span>
                 </a>
                 <a href="<?php echo esc_url($this->get_shortcode_url('lista')); ?>" class="<?php echo $active_page === 'lista' || $active_page === 'ver' ? 'active' : ''; ?>">
-                    <span>📋</span><span class="nav-text">Cotizaciones</span>
+                    <span><?php echo self::icon('file-text', 18); ?></span><span class="nav-text">Cotizaciones</span>
                 </a>
                 <a href="<?php echo esc_url($this->get_shortcode_url('proveedores')); ?>" class="<?php echo $active_page === 'proveedores' ? 'active' : ''; ?>">
-                    <span>🏢</span><span class="nav-text">Proveedores</span>
+                    <span><?php echo self::icon('users', 18); ?></span><span class="nav-text">Proveedores</span>
                 </a>
                 <?php if ($is_admin): ?>
                 <a href="<?php echo esc_url($this->get_shortcode_url('configuracion')); ?>" class="<?php echo $active_page === 'configuracion' ? 'active' : ''; ?>">
-                    <span>⚙️</span><span class="nav-text">Config</span>
+                    <span><?php echo self::icon('settings', 18); ?></span><span class="nav-text">Config</span>
                 </a>
                 <?php endif; ?>
             </nav>
@@ -314,7 +353,7 @@ class RTT_Seller_Panel {
 
         <div class="form-section costos-internos-section">
             <div class="costos-header">
-                <div class="costos-header-icon">💰</div>
+                <div class="costos-header-icon"><?php echo self::icon('dollar', 28); ?></div>
                 <div class="costos-header-text">
                     <h3>Costos Internos</h3>
                     <span class="costos-header-badge">Privado</span>
@@ -356,14 +395,14 @@ class RTT_Seller_Panel {
 
             <div class="costos-summary">
                 <div class="summary-card summary-costo">
-                    <div class="summary-icon">📊</div>
+                    <div class="summary-icon"><?php echo self::icon('bar-chart', 24); ?></div>
                     <div class="summary-content">
                         <span class="summary-label">Costo Total</span>
                         <span class="summary-value" id="costo_total_display">$ 0.00</span>
                     </div>
                 </div>
                 <div class="summary-card summary-ganancia" id="ganancia-card">
-                    <div class="summary-icon">📈</div>
+                    <div class="summary-icon"><?php echo self::icon('trending-up', 24); ?></div>
                     <div class="summary-content">
                         <span class="summary-label">Ganancia</span>
                         <span class="summary-value-main" id="ganancia_usd">$ 0.00</span>
@@ -374,7 +413,7 @@ class RTT_Seller_Panel {
             </div>
 
             <div class="form-group" style="margin-top: 15px;">
-                <label for="notas_internas">📝 Notas internas</label>
+                <label for="notas_internas"><?php echo self::icon('file-text', 16); ?> Notas internas</label>
                 <textarea id="notas_internas" name="notas_internas" rows="2" placeholder="Notas privadas (no aparecen en la cotización)..."><?php echo $is_edit ? esc_textarea($cotizacion->notas_internas ?? '') : ''; ?></textarea>
             </div>
         </div>
@@ -435,28 +474,28 @@ class RTT_Seller_Panel {
 
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon">📝</div>
+                <div class="stat-icon"><?php echo self::icon('file-text', 28); ?></div>
                 <div class="stat-content">
                     <span class="stat-number"><?php echo intval($stats['total']); ?></span>
                     <span class="stat-label">Total Cotizaciones</span>
                 </div>
             </div>
             <div class="stat-card stat-warning">
-                <div class="stat-icon">📤</div>
+                <div class="stat-icon"><?php echo self::icon('send', 28); ?></div>
                 <div class="stat-content">
                     <span class="stat-number"><?php echo intval($stats['enviadas']); ?></span>
                     <span class="stat-label">Enviadas</span>
                 </div>
             </div>
             <div class="stat-card stat-success">
-                <div class="stat-icon">✅</div>
+                <div class="stat-icon"><?php echo self::icon('check', 28); ?></div>
                 <div class="stat-content">
                     <span class="stat-number"><?php echo intval($stats['aceptadas']); ?></span>
                     <span class="stat-label">Aceptadas</span>
                 </div>
             </div>
             <div class="stat-card stat-info">
-                <div class="stat-icon">💰</div>
+                <div class="stat-icon"><?php echo self::icon('dollar', 28); ?></div>
                 <div class="stat-content">
                     <span class="stat-number">$<?php echo number_format($stats['total_aceptado'] ?? 0, 0); ?></span>
                     <span class="stat-label">Monto Aceptado</span>
@@ -466,15 +505,15 @@ class RTT_Seller_Panel {
 
         <div class="quick-actions">
             <a href="<?php echo esc_url($this->get_shortcode_url('nueva')); ?>" class="quick-action-card">
-                <span class="quick-action-icon">➕</span>
+                <span class="quick-action-icon"><?php echo self::icon('plus', 20); ?></span>
                 <span class="quick-action-text">Nueva Cotización</span>
             </a>
             <a href="<?php echo esc_url($this->get_shortcode_url('lista')); ?>" class="quick-action-card">
-                <span class="quick-action-icon">📋</span>
+                <span class="quick-action-icon"><?php echo self::icon('file-text', 20); ?></span>
                 <span class="quick-action-text">Ver Todas</span>
             </a>
             <a href="<?php echo esc_url($this->get_shortcode_url('proveedores')); ?>" class="quick-action-card">
-                <span class="quick-action-icon">🏢</span>
+                <span class="quick-action-icon"><?php echo self::icon('users', 20); ?></span>
                 <span class="quick-action-text">Proveedores</span>
             </a>
         </div>
@@ -483,7 +522,7 @@ class RTT_Seller_Panel {
         <div class="section-card">
             <div class="section-header">
                 <div class="section-title">
-                    <span class="section-title-icon">🕒</span>
+                    <span class="section-title-icon"><?php echo self::icon('clock', 20); ?></span>
                     Cotizaciones Recientes
                 </div>
                 <a href="<?php echo esc_url($this->get_shortcode_url('lista')); ?>" class="btn btn-sm btn-secondary">Ver todas</a>
@@ -541,7 +580,7 @@ class RTT_Seller_Panel {
 
                 <div class="form-actions">
                     <button type="submit" name="accion" value="guardar" class="btn btn-secondary">💾 Guardar Borrador</button>
-                    <button type="submit" name="accion" value="enviar" class="btn btn-primary">📧 Guardar y Enviar</button>
+                    <button type="submit" name="accion" value="enviar" class="btn btn-primary"><?php echo self::icon('send', 16); ?> Guardar y Enviar</button>
                     <a href="<?php echo esc_url($this->get_shortcode_url()); ?>" class="btn btn-outline">Cancelar</a>
                 </div>
 
@@ -580,7 +619,7 @@ class RTT_Seller_Panel {
 
                 <div class="form-actions">
                     <button type="submit" name="accion" value="guardar" class="btn btn-secondary">💾 Guardar</button>
-                    <button type="submit" name="accion" value="enviar" class="btn btn-primary">📧 Guardar y Enviar</button>
+                    <button type="submit" name="accion" value="enviar" class="btn btn-primary"><?php echo self::icon('send', 16); ?> Guardar y Enviar</button>
                     <button type="button" class="btn btn-outline btn-preview-pdf">👁️ Ver PDF</button>
                     <a href="<?php echo esc_url($this->get_shortcode_url('lista')); ?>" class="btn btn-outline">Cancelar</a>
                 </div>
@@ -610,14 +649,14 @@ class RTT_Seller_Panel {
         ?>
         <div class="cotizacion-detail">
             <div class="detail-actions" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-                <a href="<?php echo esc_url($this->get_shortcode_url('editar') . '&id=' . $cotizacion->id); ?>" class="btn btn-primary">✏️ Editar</a>
+                <a href="<?php echo esc_url($this->get_shortcode_url('editar') . '&id=' . $cotizacion->id); ?>" class="btn btn-primary"><?php echo self::icon('edit', 16); ?> Editar</a>
                 <a href="<?php echo admin_url('admin-ajax.php?action=rtt_preview_cotizacion_pdf&id=' . $cotizacion->id); ?>" target="_blank" class="btn btn-secondary">📄 Ver PDF</a>
                 <a href="<?php echo esc_url($this->get_shortcode_url('lista')); ?>" class="btn btn-outline">← Volver</a>
             </div>
 
             <div class="detail-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
                 <div class="detail-card" style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
-                    <h3 style="margin-bottom: 15px; color: #333;">📋 Información General</h3>
+                    <h3 style="margin-bottom: 15px; color: #333;"><?php echo self::icon('file-text', 18); ?> Información General</h3>
                     <p><strong>Código:</strong> <?php echo esc_html($cotizacion->codigo); ?></p>
                     <p><strong>Estado:</strong> <span class="badge badge-<?php echo esc_attr($cotizacion->estado); ?>"><?php echo esc_html(ucfirst($cotizacion->estado)); ?></span></p>
                     <p><strong>Fecha creación:</strong> <?php echo date('d/m/Y H:i', strtotime($cotizacion->fecha_creacion)); ?></p>
@@ -640,7 +679,7 @@ class RTT_Seller_Panel {
                 </div>
 
                 <div class="detail-card" style="background: #e8f5e9; padding: 20px; border-radius: 10px;">
-                    <h3 style="margin-bottom: 15px; color: #333;">💰 Precios</h3>
+                    <h3 style="margin-bottom: 15px; color: #333;"><?php echo self::icon('dollar', 18); ?> Precios</h3>
                     <p><strong>Precio unitario:</strong> <?php echo esc_html($cotizacion->moneda); ?> <?php echo number_format($cotizacion->precio_unitario, 2); ?></p>
                     <p><strong>Descuento:</strong> <?php echo esc_html($cotizacion->descuento); ?><?php echo $cotizacion->descuento_tipo === 'porcentaje' ? '%' : ' ' . $cotizacion->moneda; ?></p>
                     <p style="font-size: 1.2em; font-weight: bold; color: #27ae60;"><strong>Total:</strong> <?php echo esc_html($cotizacion->moneda); ?> <?php echo number_format($cotizacion->precio_total, 2); ?></p>
@@ -649,7 +688,7 @@ class RTT_Seller_Panel {
 
             <?php if (!empty($cotizacion->notas)): ?>
             <div class="detail-card" style="background: #fff3cd; padding: 20px; border-radius: 10px; margin-top: 20px;">
-                <h3 style="margin-bottom: 10px; color: #333;">📝 Notas para el cliente</h3>
+                <h3 style="margin-bottom: 10px; color: #333;"><?php echo self::icon('file-text', 18); ?> Notas para el cliente</h3>
                 <p style="white-space: pre-line;"><?php echo esc_html($cotizacion->notas); ?></p>
             </div>
             <?php endif; ?>
@@ -685,7 +724,7 @@ class RTT_Seller_Panel {
         <div class="lista-container">
             <div class="section-header">
                 <div class="section-title">
-                    <span class="section-title-icon">📋</span>
+                    <span class="section-title-icon"><?php echo self::icon('file-text', 20); ?></span>
                     Lista de Cotizaciones
                 </div>
                 <a href="<?php echo esc_url($this->get_shortcode_url('nueva')); ?>" class="btn btn-primary">+ Nueva</a>
@@ -710,7 +749,7 @@ class RTT_Seller_Panel {
 
             <?php if (empty($cotizaciones)): ?>
             <div class="empty-state">
-                <div class="empty-state-icon">📋</div>
+                <div class="empty-state-icon"><?php echo self::icon('file-text', 48); ?></div>
                 <h3>No hay cotizaciones</h3>
                 <p>Crea tu primera cotización</p>
                 <a href="<?php echo esc_url($this->get_shortcode_url('nueva')); ?>" class="btn btn-primary">+ Nueva Cotización</a>
@@ -745,8 +784,8 @@ class RTT_Seller_Panel {
                         <td data-label="">
                             <div class="table-actions">
                                 <a href="<?php echo esc_url($this->get_shortcode_url('ver') . '&id=' . $cot->id); ?>" class="btn-icon" title="Ver">👁️</a>
-                                <a href="<?php echo esc_url($this->get_shortcode_url('editar') . '&id=' . $cot->id); ?>" class="btn-icon" title="Editar">✏️</a>
-                                <button type="button" class="btn-icon btn-icon-delete btn-delete-cotizacion" data-id="<?php echo $cot->id; ?>" data-codigo="<?php echo esc_attr($cot->codigo); ?>" title="Eliminar">🗑️</button>
+                                <a href="<?php echo esc_url($this->get_shortcode_url('editar') . '&id=' . $cot->id); ?>" class="btn-icon" title="Editar"><?php echo self::icon('edit', 16); ?></a>
+                                <button type="button" class="btn-icon btn-icon-delete btn-delete-cotizacion" data-id="<?php echo $cot->id; ?>" data-codigo="<?php echo esc_attr($cot->codigo); ?>" title="Eliminar"><?php echo self::icon('trash', 16); ?></button>
                             </div>
                         </td>
                     </tr>
@@ -903,7 +942,7 @@ class RTT_Seller_Panel {
         <div class="lista-container">
             <div class="section-header">
                 <div class="section-title">
-                    <span class="section-title-icon">👥</span>
+                    <span class="section-title-icon"><?php echo self::icon('users', 20); ?></span>
                     Directorio de Proveedores
                 </div>
                 <button type="button" class="btn btn-primary" id="btn-nuevo-proveedor">+ Nuevo Proveedor</button>
@@ -915,7 +954,7 @@ class RTT_Seller_Panel {
             ?>
             <div class="provider-stats">
                 <a href="<?php echo esc_url($filter_base_url); ?>" class="provider-stat <?php echo empty($tipo_filtro) ? 'active' : ''; ?>">
-                    <div class="provider-stat-icon">📊</div>
+                    <div class="provider-stat-icon"><?php echo self::icon('bar-chart', 22); ?></div>
                     <div class="provider-stat-count"><?php echo $stats['total']; ?></div>
                     <div class="provider-stat-label">Total</div>
                 </a>
@@ -948,7 +987,7 @@ class RTT_Seller_Panel {
 
             <?php if (empty($proveedores)): ?>
             <div class="empty-state-providers">
-                <div class="empty-icon">👥</div>
+                <div class="empty-icon"><?php echo self::icon('users', 48); ?></div>
                 <h3>No hay proveedores</h3>
                 <p>Agrega tu primer proveedor</p>
                 <button type="button" class="btn btn-primary" id="btn-nuevo-proveedor-empty">+ Agregar</button>
@@ -977,8 +1016,8 @@ class RTT_Seller_Panel {
                         <td data-label="Estado"><?php echo $prov->activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'; ?></td>
                         <td data-label="">
                             <div class="table-actions">
-                                <button type="button" class="btn-icon btn-edit" data-id="<?php echo $prov->id; ?>">✏️</button>
-                                <button type="button" class="btn-icon btn-icon-delete btn-delete" data-id="<?php echo $prov->id; ?>">🗑️</button>
+                                <button type="button" class="btn-icon btn-edit" data-id="<?php echo $prov->id; ?>" title="Editar"><?php echo self::icon('edit', 16); ?></button>
+                                <button type="button" class="btn-icon btn-icon-delete btn-delete" data-id="<?php echo $prov->id; ?>" title="Eliminar"><?php echo self::icon('trash', 16); ?></button>
                             </div>
                         </td>
                     </tr>
@@ -1526,15 +1565,15 @@ class RTT_Seller_Panel {
                         <div class="nav-section">
                             <span class="nav-section-title">Principal</span>
                             <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/'); ?>" class="nav-item <?php echo $active_page === 'dashboard' ? 'active' : ''; ?>">
-                                <span class="nav-icon">📊</span>
+                                <span class="nav-icon"><?php echo self::icon('dashboard', 18); ?></span>
                                 <span class="nav-text">Dashboard</span>
                             </a>
                             <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/nueva/'); ?>" class="nav-item <?php echo $active_page === 'nueva' ? 'active' : ''; ?>">
-                                <span class="nav-icon">➕</span>
+                                <span class="nav-icon"><?php echo self::icon('plus', 18); ?></span>
                                 <span class="nav-text">Nueva Cotización</span>
                             </a>
                             <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/lista/'); ?>" class="nav-item <?php echo $active_page === 'lista' ? 'active' : ''; ?>">
-                                <span class="nav-icon">📋</span>
+                                <span class="nav-icon"><?php echo self::icon('file-text', 18); ?></span>
                                 <span class="nav-text">Mis Cotizaciones</span>
                             </a>
                         </div>
@@ -1542,12 +1581,12 @@ class RTT_Seller_Panel {
                         <div class="nav-section">
                             <span class="nav-section-title">Gestión</span>
                             <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/proveedores/'); ?>" class="nav-item <?php echo $active_page === 'proveedores' ? 'active' : ''; ?>">
-                                <span class="nav-icon">🏢</span>
+                                <span class="nav-icon"><?php echo self::icon('users', 18); ?></span>
                                 <span class="nav-text">Proveedores</span>
                             </a>
                             <?php if ($is_admin): ?>
                             <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/configuracion/'); ?>" class="nav-item <?php echo $active_page === 'configuracion' ? 'active' : ''; ?>">
-                                <span class="nav-icon">⚙️</span>
+                                <span class="nav-icon"><?php echo self::icon('settings', 18); ?></span>
                                 <span class="nav-text">Configuración</span>
                             </a>
                             <?php endif; ?>
@@ -1576,7 +1615,7 @@ class RTT_Seller_Panel {
                 <!-- Main Content -->
                 <div class="main-wrapper">
                     <header class="header-bar">
-                        <button class="mobile-menu-btn" type="button">☰</button>
+                        <button class="mobile-menu-btn" type="button"><?php echo self::icon('menu', 24); ?></button>
                         <h1 class="header-title"><?php echo esc_html($title); ?></h1>
                         <div class="header-actions">
                             <?php if ($active_page !== 'nueva'): ?>
@@ -1686,28 +1725,28 @@ class RTT_Seller_Panel {
         <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon">📊</div>
+                <div class="stat-icon"><?php echo self::icon('bar-chart', 28); ?></div>
                 <div class="stat-content">
                     <div class="stat-number"><?php echo $stats['total']; ?></div>
                     <div class="stat-label">Total Cotizaciones</div>
                 </div>
             </div>
             <div class="stat-card stat-warning">
-                <div class="stat-icon">📝</div>
+                <div class="stat-icon"><?php echo self::icon('file-text', 28); ?></div>
                 <div class="stat-content">
                     <div class="stat-number"><?php echo $stats['borradores']; ?></div>
                     <div class="stat-label">Borradores</div>
                 </div>
             </div>
             <div class="stat-card stat-info">
-                <div class="stat-icon">📧</div>
+                <div class="stat-icon"><?php echo self::icon('send', 28); ?></div>
                 <div class="stat-content">
                     <div class="stat-number"><?php echo $stats['enviadas']; ?></div>
                     <div class="stat-label">Enviadas</div>
                 </div>
             </div>
             <div class="stat-card stat-success">
-                <div class="stat-icon">✅</div>
+                <div class="stat-icon"><?php echo self::icon('check', 28); ?></div>
                 <div class="stat-content">
                     <div class="stat-number"><?php echo $stats['aceptadas']; ?></div>
                     <div class="stat-label">Aceptadas</div>
@@ -1718,14 +1757,14 @@ class RTT_Seller_Panel {
         <!-- Quick Actions -->
         <div class="quick-actions">
             <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/nueva/'); ?>" class="quick-action-card">
-                <div class="quick-action-icon">➕</div>
+                <div class="quick-action-icon"><?php echo self::icon('plus', 24); ?></div>
                 <div class="quick-action-text">
                     <h3>Nueva Cotización</h3>
                     <p>Crear cotización para cliente</p>
                 </div>
             </a>
             <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/lista/'); ?>" class="quick-action-card secondary">
-                <div class="quick-action-icon">📋</div>
+                <div class="quick-action-icon"><?php echo self::icon('file-text', 24); ?></div>
                 <div class="quick-action-text">
                     <h3>Ver Todas</h3>
                     <p>Gestionar mis cotizaciones</p>
@@ -1737,7 +1776,7 @@ class RTT_Seller_Panel {
         <div class="section-card">
             <div class="section-header">
                 <h2 class="section-title">
-                    <span class="section-title-icon">📋</span>
+                    <span class="section-title-icon"><?php echo self::icon('file-text', 20); ?></span>
                     Cotizaciones Recientes
                 </h2>
                 <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/lista/'); ?>" class="btn btn-outline btn-sm">Ver todas</a>
@@ -1780,7 +1819,7 @@ class RTT_Seller_Panel {
                             <td data-label="Fecha"><?php echo date_i18n('d/m/Y', strtotime($cot->fecha_creacion)); ?></td>
                             <td data-label="" class="actions">
                                 <div class="table-actions">
-                                    <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/editar/?id=' . $cot->id); ?>" class="btn-icon" title="Editar">✏️</a>
+                                    <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/editar/?id=' . $cot->id); ?>" class="btn-icon" title="Editar"><?php echo self::icon('edit', 16); ?></a>
                                 </div>
                             </td>
                         </tr>
@@ -1917,7 +1956,7 @@ class RTT_Seller_Panel {
 
                 <div class="form-section costos-internos-section">
                     <div class="costos-header">
-                        <div class="costos-header-icon">💰</div>
+                        <div class="costos-header-icon"><?php echo self::icon('dollar', 28); ?></div>
                         <div class="costos-header-text">
                             <h3>Costos Internos</h3>
                             <span class="costos-header-badge">Privado</span>
@@ -1948,14 +1987,14 @@ class RTT_Seller_Panel {
 
                     <div class="costos-summary">
                         <div class="summary-card summary-costo">
-                            <div class="summary-icon">📊</div>
+                            <div class="summary-icon"><?php echo self::icon('bar-chart', 24); ?></div>
                             <div class="summary-content">
                                 <span class="summary-label">Costo Total</span>
                                 <span class="summary-value" id="costo_total_display">$ 0.00</span>
                             </div>
                         </div>
                         <div class="summary-card summary-ganancia" id="ganancia-card">
-                            <div class="summary-icon">📈</div>
+                            <div class="summary-icon"><?php echo self::icon('trending-up', 24); ?></div>
                             <div class="summary-content">
                                 <span class="summary-label">Ganancia</span>
                                 <span class="summary-value-main" id="ganancia_usd">$ 0.00</span>
@@ -1966,7 +2005,7 @@ class RTT_Seller_Panel {
                     </div>
 
                     <div class="form-group" style="margin-top: 15px;">
-                        <label for="notas_internas">📝 Notas internas</label>
+                        <label for="notas_internas"><?php echo self::icon('file-text', 16); ?> Notas internas</label>
                         <textarea id="notas_internas" name="notas_internas" rows="2" placeholder="Notas privadas (no aparecen en la cotización)..."></textarea>
                     </div>
                 </div>
@@ -2116,7 +2155,7 @@ class RTT_Seller_Panel {
 
                 <div class="form-section costos-internos-section">
                     <div class="costos-header">
-                        <div class="costos-header-icon">💰</div>
+                        <div class="costos-header-icon"><?php echo self::icon('dollar', 28); ?></div>
                         <div class="costos-header-text">
                             <h3>Costos Internos</h3>
                             <span class="costos-header-badge">Privado</span>
@@ -2158,14 +2197,14 @@ class RTT_Seller_Panel {
 
                     <div class="costos-summary">
                         <div class="summary-card summary-costo">
-                            <div class="summary-icon">📊</div>
+                            <div class="summary-icon"><?php echo self::icon('bar-chart', 24); ?></div>
                             <div class="summary-content">
                                 <span class="summary-label">Costo Total</span>
                                 <span class="summary-value" id="costo_total_display">$ 0.00</span>
                             </div>
                         </div>
                         <div class="summary-card summary-ganancia" id="ganancia-card">
-                            <div class="summary-icon">📈</div>
+                            <div class="summary-icon"><?php echo self::icon('trending-up', 24); ?></div>
                             <div class="summary-content">
                                 <span class="summary-label">Ganancia</span>
                                 <span class="summary-value-main" id="ganancia_usd">$ 0.00</span>
@@ -2176,7 +2215,7 @@ class RTT_Seller_Panel {
                     </div>
 
                     <div class="form-group" style="margin-top: 15px;">
-                        <label for="notas_internas">📝 Notas internas</label>
+                        <label for="notas_internas"><?php echo self::icon('file-text', 16); ?> Notas internas</label>
                         <textarea id="notas_internas" name="notas_internas" rows="2" placeholder="Notas privadas (no aparecen en la cotización)..."><?php echo esc_textarea($cotizacion->notas_internas ?? ''); ?></textarea>
                     </div>
                 </div>
@@ -2270,11 +2309,11 @@ class RTT_Seller_Panel {
                         <td data-label="Creada"><?php echo date_i18n('d/m/Y', strtotime($cot->fecha_creacion)); ?></td>
                         <td data-label="" class="actions">
                             <div class="table-actions">
-                                <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/editar/?id=' . $cot->id); ?>" class="btn-icon" title="Editar">✏️</a>
+                                <a href="<?php echo home_url('/' . self::PAGE_SLUG . '/editar/?id=' . $cot->id); ?>" class="btn-icon" title="Editar"><?php echo self::icon('edit', 16); ?></a>
                                 <?php if ($cot->estado === 'borrador'): ?>
-                                <button type="button" class="btn-icon btn-send" data-id="<?php echo $cot->id; ?>" title="Enviar">📤</button>
+                                <button type="button" class="btn-icon btn-send" data-id="<?php echo $cot->id; ?>" title="Enviar"><?php echo self::icon('send', 16); ?></button>
                                 <?php endif; ?>
-                                <button type="button" class="btn-icon btn-icon-delete btn-delete" data-id="<?php echo $cot->id; ?>" title="Eliminar">🗑️</button>
+                                <button type="button" class="btn-icon btn-icon-delete btn-delete" data-id="<?php echo $cot->id; ?>" title="Eliminar"><?php echo self::icon('trash', 16); ?></button>
                             </div>
                         </td>
                     </tr>
@@ -3030,7 +3069,7 @@ class RTT_Seller_Panel {
         <div class="lista-container">
             <div class="section-header">
                 <div class="section-title">
-                    <span class="section-title-icon">👥</span>
+                    <span class="section-title-icon"><?php echo self::icon('users', 20); ?></span>
                     Directorio de Proveedores
                 </div>
                 <button type="button" class="btn btn-primary" id="btn-nuevo-proveedor">
@@ -3041,7 +3080,7 @@ class RTT_Seller_Panel {
             <!-- Stats por tipo -->
             <div class="provider-stats">
                 <a href="?tipo=" class="provider-stat <?php echo empty($tipo_filtro) ? 'active' : ''; ?>">
-                    <div class="provider-stat-icon">📊</div>
+                    <div class="provider-stat-icon"><?php echo self::icon('bar-chart', 22); ?></div>
                     <div class="provider-stat-count"><?php echo $stats['total']; ?></div>
                     <div class="provider-stat-label">Total</div>
                 </a>
@@ -3077,7 +3116,7 @@ class RTT_Seller_Panel {
 
             <?php if (empty($proveedores)): ?>
             <div class="empty-state-providers">
-                <div class="empty-icon">👥</div>
+                <div class="empty-icon"><?php echo self::icon('users', 48); ?></div>
                 <h3>No hay proveedores</h3>
                 <p><?php echo !empty($buscar) || !empty($tipo_filtro) ? 'No se encontraron proveedores con los filtros aplicados.' : 'Empieza agregando tu primer proveedor.'; ?></p>
                 <?php if (empty($buscar) && empty($tipo_filtro)): ?>
@@ -3155,10 +3194,10 @@ class RTT_Seller_Panel {
                         <td data-label="" class="actions">
                             <div class="table-actions">
                                 <?php if (!empty($prov->telefono)): ?>
-                                <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $prov->telefono); ?>" target="_blank" class="btn-icon btn-icon-whatsapp" title="WhatsApp">💬</a>
+                                <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $prov->telefono); ?>" target="_blank" class="btn-icon btn-icon-whatsapp" title="WhatsApp"><?php echo self::icon('message', 16); ?></a>
                                 <?php endif; ?>
-                                <button type="button" class="btn-icon btn-icon-edit btn-edit" data-id="<?php echo $prov->id; ?>" title="Editar">✏️</button>
-                                <button type="button" class="btn-icon btn-icon-delete btn-delete" data-id="<?php echo $prov->id; ?>" title="Eliminar">🗑️</button>
+                                <button type="button" class="btn-icon btn-icon-edit btn-edit" data-id="<?php echo $prov->id; ?>" title="Editar"><?php echo self::icon('edit', 16); ?></button>
+                                <button type="button" class="btn-icon btn-icon-delete btn-delete" data-id="<?php echo $prov->id; ?>" title="Eliminar"><?php echo self::icon('trash', 16); ?></button>
                             </div>
                         </td>
                     </tr>
