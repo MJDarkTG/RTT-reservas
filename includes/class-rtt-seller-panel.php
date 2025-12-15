@@ -21,6 +21,16 @@ class RTT_Seller_Panel {
     const SELLER_ROLE = 'rtt_vendedor';
 
     /**
+     * Vista actual del shortcode (para páginas separadas)
+     */
+    private $current_view = '';
+
+    /**
+     * URLs personalizadas para cada vista (configurables via shortcode)
+     */
+    private $custom_urls = [];
+
+    /**
      * Inicializar
      */
     public function init() {
@@ -54,13 +64,44 @@ class RTT_Seller_Panel {
     /**
      * Shortcode [rtt_seller_panel]
      * Permite embeber el panel en cualquier página de WordPress/Elementor
+     *
+     * Uso básico: [rtt_seller_panel]
+     * Con vista fija: [rtt_seller_panel view="proveedores"]
+     * Con URLs personalizadas: [rtt_seller_panel url_dashboard="/mi-panel/" url_nueva="/mi-panel/nueva/" ...]
+     *
+     * Views disponibles: dashboard, nueva, editar, ver, lista, proveedores, configuracion
      */
     public function render_shortcode($atts = []) {
+        // Parsear atributos
+        $atts = shortcode_atts([
+            'view' => '', // Vista fija (opcional)
+            'url_dashboard' => '',
+            'url_nueva' => '',
+            'url_lista' => '',
+            'url_proveedores' => '',
+            'url_configuracion' => '',
+        ], $atts, 'rtt_seller_panel');
+
+        // Guardar URLs personalizadas
+        $this->custom_urls = [
+            'dashboard' => $atts['url_dashboard'],
+            'nueva' => $atts['url_nueva'],
+            'lista' => $atts['url_lista'],
+            'proveedores' => $atts['url_proveedores'],
+            'configuracion' => $atts['url_configuracion'],
+        ];
+
         // Capturar output
         ob_start();
 
-        // Usar parámetro GET para la acción
-        $action = sanitize_text_field($_GET['panel'] ?? 'dashboard');
+        // Prioridad: 1) atributo view del shortcode, 2) parámetro GET, 3) dashboard
+        if (!empty($atts['view'])) {
+            $action = sanitize_text_field($atts['view']);
+            $this->current_view = $action; // Guardar vista fija
+        } else {
+            $action = sanitize_text_field($_GET['panel'] ?? 'dashboard');
+            $this->current_view = ''; // No hay vista fija
+        }
 
         // Si no está logueado, mostrar login
         if (!$this->can_access_panel()) {
@@ -102,12 +143,31 @@ class RTT_Seller_Panel {
 
     /**
      * Obtener URL base para shortcode
+     * Soporta URLs personalizadas para páginas separadas en Elementor
      */
     private function get_shortcode_url($action = '') {
+        // Si hay URL personalizada para esta acción, usarla
+        if (!empty($this->custom_urls[$action])) {
+            return home_url($this->custom_urls[$action]);
+        }
+
+        // Si estamos en una vista fija (página separada), la URL actual es la base
+        // Solo añadir parámetros si la acción es diferente a la vista actual
         $base_url = get_permalink();
+
         if (empty($action) || $action === 'dashboard') {
+            // Para dashboard, si hay URL personalizada usarla
+            if (!empty($this->custom_urls['dashboard'])) {
+                return home_url($this->custom_urls['dashboard']);
+            }
             return $base_url;
         }
+
+        // Si la acción es la misma que la vista fija actual, solo usar URL base
+        if (!empty($this->current_view) && $this->current_view === $action) {
+            return $base_url;
+        }
+
         return add_query_arg('panel', $action, $base_url);
     }
 
@@ -907,14 +967,18 @@ class RTT_Seller_Panel {
                 <button type="button" class="btn btn-primary" id="btn-nuevo-proveedor">+ Nuevo Proveedor</button>
             </div>
 
+            <?php
+            // URL base para filtros (sin ?panel= si estamos en vista fija)
+            $filter_base_url = $this->get_shortcode_url('proveedores');
+            ?>
             <div class="provider-stats">
-                <a href="<?php echo esc_url($this->get_shortcode_url('proveedores')); ?>" class="provider-stat <?php echo empty($tipo_filtro) ? 'active' : ''; ?>">
+                <a href="<?php echo esc_url($filter_base_url); ?>" class="provider-stat <?php echo empty($tipo_filtro) ? 'active' : ''; ?>">
                     <div class="provider-stat-icon">📊</div>
                     <div class="provider-stat-count"><?php echo $stats['total']; ?></div>
                     <div class="provider-stat-label">Total</div>
                 </a>
                 <?php foreach ($tipos as $key => $label): ?>
-                <a href="<?php echo esc_url($this->get_shortcode_url('proveedores') . '&tipo=' . $key); ?>" class="provider-stat <?php echo $tipo_filtro === $key ? 'active' : ''; ?>">
+                <a href="<?php echo esc_url(add_query_arg('tipo', $key, $filter_base_url)); ?>" class="provider-stat <?php echo $tipo_filtro === $key ? 'active' : ''; ?>">
                     <div class="provider-stat-icon"><?php echo $tipo_icons[$key] ?? '📦'; ?></div>
                     <div class="provider-stat-count"><?php echo $stats[$key] ?? 0; ?></div>
                     <div class="provider-stat-label"><?php echo esc_html($label); ?></div>
@@ -924,7 +988,9 @@ class RTT_Seller_Panel {
 
             <div class="filters">
                 <form method="get" class="filter-form provider-filters">
+                    <?php if (empty($this->current_view)): ?>
                     <input type="hidden" name="panel" value="proveedores">
+                    <?php endif; ?>
                     <div class="filter-group">
                         <label>Tipo:</label>
                         <select name="tipo" onchange="this.form.submit()">
