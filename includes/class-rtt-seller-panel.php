@@ -244,6 +244,198 @@ class RTT_Seller_Panel {
                 .rtt-panel-nav a span.nav-text { display: none; }
                 .rtt-panel-nav a { padding: 10px 12px; }
             }
+
+            /* Botones independientes del tema */
+            .rtt-panel-embedded .btn {
+                display: inline-block !important;
+                padding: 10px 20px !important;
+                border-radius: 8px !important;
+                text-decoration: none !important;
+                font-weight: 600 !important;
+                font-size: 14px !important;
+                cursor: pointer !important;
+                border: none !important;
+                transition: all 0.2s !important;
+                line-height: 1.4 !important;
+            }
+            .rtt-panel-embedded .btn-primary {
+                background: linear-gradient(135deg, #D4A017, #B8860B) !important;
+                color: white !important;
+            }
+            .rtt-panel-embedded .btn-primary:hover {
+                background: linear-gradient(135deg, #B8860B, #996515) !important;
+                color: white !important;
+            }
+            .rtt-panel-embedded .btn-secondary {
+                background: #6c757d !important;
+                color: white !important;
+            }
+            .rtt-panel-embedded .btn-secondary:hover {
+                background: #5a6268 !important;
+            }
+            .rtt-panel-embedded .btn-success {
+                background: #28a745 !important;
+                color: white !important;
+            }
+            .rtt-panel-embedded .btn-success:hover {
+                background: #218838 !important;
+            }
+            .rtt-panel-embedded .btn-outline {
+                background: transparent !important;
+                color: #666 !important;
+                border: 2px solid #ddd !important;
+            }
+            .rtt-panel-embedded .btn-outline:hover {
+                background: #f5f5f5 !important;
+                border-color: #bbb !important;
+            }
+            .rtt-panel-embedded .btn-sm {
+                padding: 6px 12px !important;
+                font-size: 12px !important;
+            }
+
+            /* Stats Grid */
+            .rtt-panel-embedded .stats-grid {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+                gap: 15px !important;
+                margin-bottom: 25px !important;
+            }
+            .rtt-panel-embedded .stat-card {
+                background: white !important;
+                padding: 20px !important;
+                border-radius: 12px !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 15px !important;
+                border-left: 4px solid #D4A017 !important;
+            }
+            .rtt-panel-embedded .stat-card.stat-warning { border-left-color: #ffc107 !important; }
+            .rtt-panel-embedded .stat-card.stat-success { border-left-color: #28a745 !important; }
+            .rtt-panel-embedded .stat-card.stat-info { border-left-color: #17a2b8 !important; }
+            .rtt-panel-embedded .stat-icon {
+                font-size: 28px !important;
+            }
+            .rtt-panel-embedded .stat-number {
+                font-size: 28px !important;
+                font-weight: 700 !important;
+                color: #333 !important;
+                line-height: 1 !important;
+            }
+            .rtt-panel-embedded .stat-label {
+                font-size: 13px !important;
+                color: #666 !important;
+                margin-top: 4px !important;
+            }
+
+            /* Quick Actions */
+            .rtt-panel-embedded .quick-actions {
+                display: flex !important;
+                gap: 15px !important;
+                margin-bottom: 25px !important;
+                flex-wrap: wrap !important;
+            }
+            .rtt-panel-embedded .quick-action-card {
+                background: linear-gradient(135deg, #D4A017, #B8860B) !important;
+                color: white !important;
+                padding: 20px 25px !important;
+                border-radius: 12px !important;
+                text-decoration: none !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 12px !important;
+                font-weight: 600 !important;
+                transition: transform 0.2s, box-shadow 0.2s !important;
+                box-shadow: 0 4px 12px rgba(212, 160, 23, 0.3) !important;
+            }
+            .rtt-panel-embedded .quick-action-card:hover {
+                transform: translateY(-2px) !important;
+                box-shadow: 0 6px 16px rgba(212, 160, 23, 0.4) !important;
+                color: white !important;
+            }
+            .rtt-panel-embedded .quick-action-icon {
+                font-size: 24px !important;
+            }
+            .rtt-panel-embedded .quick-action-text {
+                font-size: 15px !important;
+            }
+
+            /* Section Card */
+            .rtt-panel-embedded .section-card {
+                background: white !important;
+                border-radius: 12px !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+                overflow: hidden !important;
+            }
+            .rtt-panel-embedded .section-header {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                padding: 15px 20px !important;
+                background: #f8f9fa !important;
+                border-bottom: 1px solid #eee !important;
+            }
+            .rtt-panel-embedded .section-title {
+                font-weight: 600 !important;
+                color: #333 !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 8px !important;
+            }
+
+            /* Data Table */
+            .rtt-panel-embedded .data-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+            .rtt-panel-embedded .data-table th,
+            .rtt-panel-embedded .data-table td {
+                padding: 12px 15px !important;
+                text-align: left !important;
+                border-bottom: 1px solid #eee !important;
+                font-size: 14px !important;
+            }
+            .rtt-panel-embedded .data-table th {
+                background: #f8f9fa !important;
+                font-weight: 600 !important;
+                color: #333 !important;
+            }
+            .rtt-panel-embedded .data-table tr:hover {
+                background: #fafafa !important;
+            }
+            .rtt-panel-embedded .table-code {
+                font-weight: 600 !important;
+                color: #D4A017 !important;
+                text-decoration: none !important;
+            }
+
+            /* Badges */
+            .rtt-panel-embedded .badge {
+                display: inline-block !important;
+                padding: 4px 10px !important;
+                border-radius: 20px !important;
+                font-size: 12px !important;
+                font-weight: 500 !important;
+            }
+            .rtt-panel-embedded .badge-borrador { background: #ffc107 !important; color: #333 !important; }
+            .rtt-panel-embedded .badge-enviada { background: #17a2b8 !important; color: white !important; }
+            .rtt-panel-embedded .badge-aceptada { background: #28a745 !important; color: white !important; }
+            .rtt-panel-embedded .badge-vencida { background: #dc3545 !important; color: white !important; }
+
+            /* Dashboard Welcome */
+            .rtt-panel-embedded .dashboard-welcome {
+                margin-bottom: 25px !important;
+            }
+            .rtt-panel-embedded .dashboard-welcome h2 {
+                font-size: 1.5rem !important;
+                color: #333 !important;
+                margin: 0 0 5px 0 !important;
+            }
+            .rtt-panel-embedded .dashboard-welcome p {
+                color: #666 !important;
+                margin: 0 !important;
+            }
         </style>
 
         <div class="rtt-panel-embedded">
