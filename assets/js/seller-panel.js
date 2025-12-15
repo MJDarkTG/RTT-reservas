@@ -433,9 +433,8 @@
             RTTSeller.initDeleteConfirm();
         }
 
-        if ($('#proveedor-form').length) {
-            RTTSeller.initProviderForm();
-        }
+        // Provider form is handled by inline scripts in render_proveedores()
+        // to avoid duplicate handlers
 
         if ($('#config-form').length) {
             RTTSeller.initConfigForm();

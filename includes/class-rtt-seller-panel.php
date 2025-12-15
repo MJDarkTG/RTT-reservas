@@ -1912,6 +1912,7 @@ class RTT_Seller_Panel {
 
                 $.post(rttAjax.url, {
                     action: 'rtt_save_configuracion',
+                    tipo_cambio: $('#tipo_cambio').val(),
                     cotizacion_formas_pago: $('#cotizacion_formas_pago').val(),
                     cotizacion_terminos: $('#cotizacion_terminos').val()
                 }, function(response) {
@@ -1931,15 +1932,30 @@ class RTT_Seller_Panel {
      */
     public function ajax_save_configuracion() {
         if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'Sin permisos']);
+            wp_send_json_error(['message' => 'Sin permisos - Solo administradores']);
         }
 
         $options = get_option('rtt_reservas_options', []);
-        $options['cotizacion_formas_pago'] = sanitize_textarea_field($_POST['cotizacion_formas_pago'] ?? '');
-        $options['cotizacion_terminos'] = sanitize_textarea_field($_POST['cotizacion_terminos'] ?? '');
 
-        update_option('rtt_reservas_options', $options);
-        wp_send_json_success(['message' => 'Configuración guardada']);
+        // Tipo de cambio
+        $options['tipo_cambio'] = floatval($_POST['tipo_cambio'] ?? 3.70);
+
+        // Formas de pago - preservar saltos de línea
+        $formas_pago = isset($_POST['cotizacion_formas_pago']) ? $_POST['cotizacion_formas_pago'] : '';
+        $options['cotizacion_formas_pago'] = wp_kses_post($formas_pago);
+
+        // Términos - preservar saltos de línea
+        $terminos = isset($_POST['cotizacion_terminos']) ? $_POST['cotizacion_terminos'] : '';
+        $options['cotizacion_terminos'] = wp_kses_post($terminos);
+
+        $result = update_option('rtt_reservas_options', $options);
+
+        if ($result) {
+            wp_send_json_success(['message' => 'Configuración guardada correctamente']);
+        } else {
+            // Si no hubo cambios, igual es éxito
+            wp_send_json_success(['message' => 'Configuración guardada']);
+        }
     }
 
     /**
@@ -1948,56 +1964,177 @@ class RTT_Seller_Panel {
     private function render_proveedores() {
         $tipos = RTT_Database::get_tipos_proveedores();
         $tipo_filtro = sanitize_text_field($_GET['tipo'] ?? '');
+        $buscar = sanitize_text_field($_GET['buscar'] ?? '');
         $proveedores = RTT_Database::get_proveedores(['tipo' => $tipo_filtro]);
 
-        $this->render_header('Proveedores');
+        // Filtrar por búsqueda si existe
+        if (!empty($buscar)) {
+            $proveedores = array_filter($proveedores, function($p) use ($buscar) {
+                $buscar_lower = strtolower($buscar);
+                return strpos(strtolower($p->nombre), $buscar_lower) !== false ||
+                       strpos(strtolower($p->contacto), $buscar_lower) !== false ||
+                       strpos(strtolower($p->telefono), $buscar_lower) !== false;
+            });
+        }
+
+        // Contar por tipo para estadísticas
+        $all_proveedores = RTT_Database::get_proveedores([]);
+        $stats = ['total' => count($all_proveedores)];
+        foreach ($tipos as $key => $label) {
+            $stats[$key] = 0;
+        }
+        foreach ($all_proveedores as $p) {
+            if (isset($stats[$p->tipo])) {
+                $stats[$p->tipo]++;
+            }
+        }
+
+        // Iconos por tipo
+        $tipo_icons = [
+            'guia' => '👨‍🏫',
+            'transporte' => '🚐',
+            'restaurante' => '🍽️',
+            'hotel' => '🏨',
+            'actividad' => '🎯',
+            'entrada' => '🎟️',
+            'otro' => '📦'
+        ];
+
+        $this->render_header('Proveedores', 'proveedores');
         ?>
         <div class="lista-container">
             <div class="section-header">
-                <h1>Proveedores</h1>
-                <button type="button" class="btn btn-primary" id="btn-nuevo-proveedor">+ Nuevo Proveedor</button>
+                <div class="section-title">
+                    <span class="section-title-icon">👥</span>
+                    Directorio de Proveedores
+                </div>
+                <button type="button" class="btn btn-primary" id="btn-nuevo-proveedor">
+                    <span>+</span> Nuevo Proveedor
+                </button>
             </div>
 
+            <!-- Stats por tipo -->
+            <div class="provider-stats">
+                <a href="?tipo=" class="provider-stat <?php echo empty($tipo_filtro) ? 'active' : ''; ?>">
+                    <div class="provider-stat-icon">📊</div>
+                    <div class="provider-stat-count"><?php echo $stats['total']; ?></div>
+                    <div class="provider-stat-label">Total</div>
+                </a>
+                <?php foreach ($tipos as $key => $label): ?>
+                <a href="?tipo=<?php echo esc_attr($key); ?>" class="provider-stat <?php echo $tipo_filtro === $key ? 'active' : ''; ?>">
+                    <div class="provider-stat-icon"><?php echo $tipo_icons[$key] ?? '📦'; ?></div>
+                    <div class="provider-stat-count"><?php echo $stats[$key] ?? 0; ?></div>
+                    <div class="provider-stat-label"><?php echo esc_html($label); ?></div>
+                </a>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- Filtros -->
             <div class="filters">
-                <form method="get" class="filter-form">
-                    <select name="tipo" onchange="this.form.submit()">
-                        <option value="">Todos los tipos</option>
-                        <?php foreach ($tipos as $key => $label): ?>
-                        <option value="<?php echo esc_attr($key); ?>" <?php selected($tipo_filtro, $key); ?>><?php echo esc_html($label); ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                <form method="get" class="filter-form provider-filters">
+                    <div class="filter-group">
+                        <label>Tipo:</label>
+                        <select name="tipo" onchange="this.form.submit()">
+                            <option value="">Todos</option>
+                            <?php foreach ($tipos as $key => $label): ?>
+                            <option value="<?php echo esc_attr($key); ?>" <?php selected($tipo_filtro, $key); ?>><?php echo esc_html($label); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="filter-group search-input-wrapper">
+                        <input type="text" name="buscar" placeholder="Buscar proveedor..." value="<?php echo esc_attr($buscar); ?>">
+                    </div>
+                    <?php if (!empty($buscar) || !empty($tipo_filtro)): ?>
+                    <a href="?" class="btn btn-sm btn-secondary">Limpiar filtros</a>
+                    <?php endif; ?>
                 </form>
             </div>
 
             <?php if (empty($proveedores)): ?>
-            <div class="empty-state">
-                <p>No hay proveedores registrados.</p>
+            <div class="empty-state-providers">
+                <div class="empty-icon">👥</div>
+                <h3>No hay proveedores</h3>
+                <p><?php echo !empty($buscar) || !empty($tipo_filtro) ? 'No se encontraron proveedores con los filtros aplicados.' : 'Empieza agregando tu primer proveedor.'; ?></p>
+                <?php if (empty($buscar) && empty($tipo_filtro)): ?>
+                <button type="button" class="btn btn-primary" id="btn-nuevo-proveedor-empty">+ Agregar Proveedor</button>
+                <?php endif; ?>
             </div>
             <?php else: ?>
             <table class="data-table">
                 <thead>
                     <tr>
                         <th>Tipo</th>
-                        <th>Nombre</th>
+                        <th>Proveedor</th>
                         <th>Contacto</th>
                         <th>Teléfono</th>
                         <th>Costo Base</th>
                         <th>Estado</th>
-                        <th>Acciones</th>
+                        <th style="text-align: right;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($proveedores as $prov): ?>
                     <tr data-id="<?php echo $prov->id; ?>">
-                        <td><span class="badge badge-<?php echo esc_attr($prov->tipo); ?>"><?php echo esc_html($tipos[$prov->tipo] ?? $prov->tipo); ?></span></td>
-                        <td><strong><?php echo esc_html($prov->nombre); ?></strong></td>
-                        <td><?php echo esc_html($prov->contacto); ?></td>
-                        <td><?php echo esc_html($prov->telefono); ?></td>
-                        <td><?php echo esc_html($prov->moneda); ?> <?php echo number_format($prov->costo_base, 2); ?></td>
-                        <td><?php echo $prov->activo ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>'; ?></td>
-                        <td class="actions">
-                            <button type="button" class="btn btn-sm btn-edit" data-id="<?php echo $prov->id; ?>">Editar</button>
-                            <button type="button" class="btn btn-sm btn-danger btn-delete" data-id="<?php echo $prov->id; ?>">Eliminar</button>
+                        <td>
+                            <span class="badge badge-<?php echo esc_attr($prov->tipo); ?>">
+                                <?php echo $tipo_icons[$prov->tipo] ?? ''; ?> <?php echo esc_html($tipos[$prov->tipo] ?? $prov->tipo); ?>
+                            </span>
+                        </td>
+                        <td>
+                            <div class="provider-name">
+                                <strong><?php echo esc_html($prov->nombre); ?></strong>
+                                <?php if (!empty($prov->notas)): ?>
+                                <small title="<?php echo esc_attr($prov->notas); ?>"><?php echo esc_html(mb_substr($prov->notas, 0, 40)); ?><?php echo mb_strlen($prov->notas) > 40 ? '...' : ''; ?></small>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="provider-contact">
+                                <?php if (!empty($prov->contacto)): ?>
+                                <span class="provider-contact-name"><?php echo esc_html($prov->contacto); ?></span>
+                                <?php endif; ?>
+                                <?php if (!empty($prov->email)): ?>
+                                <span class="provider-contact-email"><?php echo esc_html($prov->email); ?></span>
+                                <?php endif; ?>
+                                <?php if (empty($prov->contacto) && empty($prov->email)): ?>
+                                <span class="text-muted">—</span>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                        <td>
+                            <?php if (!empty($prov->telefono)): ?>
+                            <div class="provider-phone">
+                                <span class="provider-phone-icon">📱</span>
+                                <?php echo esc_html($prov->telefono); ?>
+                            </div>
+                            <?php else: ?>
+                            <span class="text-muted">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ($prov->costo_base > 0): ?>
+                            <span class="provider-price <?php echo strtolower($prov->moneda); ?>">
+                                <?php echo $prov->moneda === 'PEN' ? 'S/' : '$'; ?> <?php echo number_format($prov->costo_base, 2); ?>
+                            </span>
+                            <?php else: ?>
+                            <span class="text-muted">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ($prov->activo): ?>
+                            <span class="badge badge-success">✓ Activo</span>
+                            <?php else: ?>
+                            <span class="badge badge-danger">Inactivo</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                <?php if (!empty($prov->telefono)): ?>
+                                <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $prov->telefono); ?>" target="_blank" class="btn-icon btn-icon-whatsapp" title="WhatsApp">💬</a>
+                                <?php endif; ?>
+                                <button type="button" class="btn-icon btn-icon-edit btn-edit" data-id="<?php echo $prov->id; ?>" title="Editar">✏️</button>
+                                <button type="button" class="btn-icon btn-icon-delete btn-delete" data-id="<?php echo $prov->id; ?>" title="Eliminar">🗑️</button>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -2017,57 +2154,57 @@ class RTT_Seller_Panel {
                     <input type="hidden" name="id" value="0">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="prov_tipo">Tipo *</label>
+                            <label for="prov_tipo">Tipo de proveedor *</label>
                             <select id="prov_tipo" name="tipo" required>
                                 <?php foreach ($tipos as $key => $label): ?>
-                                <option value="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></option>
+                                <option value="<?php echo esc_attr($key); ?>"><?php echo ($tipo_icons[$key] ?? '') . ' ' . esc_html($label); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="prov_nombre">Nombre *</label>
-                            <input type="text" id="prov_nombre" name="nombre" required>
+                            <label for="prov_nombre">Nombre del proveedor *</label>
+                            <input type="text" id="prov_nombre" name="nombre" placeholder="Ej: Transportes Cusco SAC" required>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="prov_contacto">Persona de contacto</label>
-                            <input type="text" id="prov_contacto" name="contacto">
+                            <input type="text" id="prov_contacto" name="contacto" placeholder="Ej: Juan Pérez">
                         </div>
                         <div class="form-group">
-                            <label for="prov_telefono">Teléfono</label>
-                            <input type="text" id="prov_telefono" name="telefono">
+                            <label for="prov_telefono">Teléfono / WhatsApp</label>
+                            <input type="text" id="prov_telefono" name="telefono" placeholder="Ej: +51 984 123 456">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="prov_email">Email</label>
-                            <input type="email" id="prov_email" name="email">
+                            <label for="prov_email">Correo electrónico</label>
+                            <input type="email" id="prov_email" name="email" placeholder="Ej: contacto@proveedor.com">
                         </div>
                         <div class="form-group">
-                            <label for="prov_costo">Costo base</label>
+                            <label for="prov_costo">Costo base referencial</label>
                             <div class="input-group">
                                 <select id="prov_moneda" name="moneda">
                                     <option value="PEN">S/</option>
                                     <option value="USD">$</option>
                                 </select>
-                                <input type="number" id="prov_costo" name="costo_base" value="0" min="0" step="0.01">
+                                <input type="number" id="prov_costo" name="costo_base" value="0" min="0" step="0.01" placeholder="0.00">
                             </div>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="prov_notas">Notas</label>
-                        <textarea id="prov_notas" name="notas" rows="2"></textarea>
+                        <label for="prov_notas">Notas adicionales</label>
+                        <textarea id="prov_notas" name="notas" rows="3" placeholder="Información adicional sobre el proveedor, condiciones, horarios, etc."></textarea>
                     </div>
                     <div class="form-group">
-                        <label>
+                        <label class="checkbox-label">
                             <input type="checkbox" id="prov_activo" name="activo" value="1" checked>
-                            Proveedor activo
+                            <span>Proveedor activo (aparece en las listas)</span>
                         </label>
                     </div>
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Guardar</button>
                         <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">💾 Guardar Proveedor</button>
                     </div>
                 </form>
             </div>
@@ -2081,30 +2218,49 @@ class RTT_Seller_Panel {
      */
     private function get_proveedores_scripts() {
         return "
-        // Abrir modal nuevo
-        $('#btn-nuevo-proveedor').on('click', function() {
+        // Función para abrir modal nuevo
+        function openNewProviderModal() {
             $('#modal-title').text('Nuevo Proveedor');
             $('#proveedor-form')[0].reset();
             $('input[name=id]').val(0);
             $('#prov_activo').prop('checked', true);
-            $('#modal-proveedor').show();
+            $('#modal-proveedor').fadeIn(200);
+        }
+
+        // Abrir modal nuevo (botón header)
+        $('#btn-nuevo-proveedor, #btn-nuevo-proveedor-empty').on('click', openNewProviderModal);
+
+        // Cerrar modal con ESC
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape') {
+                $('#modal-proveedor').fadeOut(200);
+            }
         });
 
-        // Cerrar modal
+        // Cerrar modal click fuera
+        $('#modal-proveedor').on('click', function(e) {
+            if ($(e.target).hasClass('modal')) {
+                $(this).fadeOut(200);
+            }
+        });
+
+        // Cerrar modal botón X
         $('.modal-close').on('click', function() {
-            $('#modal-proveedor').hide();
+            $('#modal-proveedor').fadeOut(200);
         });
 
         // Editar proveedor
         $('.btn-edit').on('click', function() {
             var id = $(this).data('id');
-            var row = $(this).closest('tr');
+            var btn = $(this);
+            btn.css('opacity', '0.5');
 
             $('#modal-title').text('Editar Proveedor');
             $('input[name=id]').val(id);
 
             // Cargar datos via AJAX
             $.get(rttAjax.url, { action: 'rtt_get_proveedores', id: id }, function(response) {
+                btn.css('opacity', '1');
                 if (response.success && response.data) {
                     var p = response.data;
                     $('#prov_tipo').val(p.tipo);
@@ -2116,21 +2272,30 @@ class RTT_Seller_Panel {
                     $('#prov_costo').val(p.costo_base);
                     $('#prov_notas').val(p.notas);
                     $('#prov_activo').prop('checked', p.activo == 1);
-                    $('#modal-proveedor').show();
+                    $('#modal-proveedor').fadeIn(200);
                 }
             });
         });
 
         // Eliminar proveedor
         $('.btn-delete').on('click', function() {
-            if (!confirm('¿Eliminar este proveedor?')) return;
+            if (!confirm('¿Eliminar este proveedor? Esta acción no se puede deshacer.')) return;
             var id = $(this).data('id');
             var row = $(this).closest('tr');
+            var btn = $(this);
+
+            btn.css('opacity', '0.5');
 
             $.post(rttAjax.url, { action: 'rtt_delete_proveedor', id: id }, function(response) {
                 if (response.success) {
-                    row.fadeOut(300, function() { $(this).remove(); });
+                    row.fadeOut(300, function() {
+                        $(this).remove();
+                        // Actualizar contador total
+                        var currentCount = parseInt($('.provider-stat:first .provider-stat-count').text()) - 1;
+                        $('.provider-stat:first .provider-stat-count').text(currentCount);
+                    });
                 } else {
+                    btn.css('opacity', '1');
                     alert(response.data.message);
                 }
             });
@@ -2140,14 +2305,29 @@ class RTT_Seller_Panel {
         $('#proveedor-form').on('submit', function(e) {
             e.preventDefault();
             var formData = $(this).serialize();
+            var btn = $(this).find('button[type=submit]');
+            var btnText = btn.html();
+
+            btn.prop('disabled', true).html('Guardando...');
 
             $.post(rttAjax.url, formData + '&action=rtt_save_proveedor', function(response) {
                 if (response.success) {
                     location.reload();
                 } else {
+                    btn.prop('disabled', false).html(btnText);
                     alert(response.data.message);
                 }
+            }).fail(function() {
+                btn.prop('disabled', false).html(btnText);
+                alert('Error de conexión');
             });
+        });
+
+        // Búsqueda con Enter
+        $('input[name=buscar]').on('keypress', function(e) {
+            if (e.which === 13) {
+                $(this).closest('form').submit();
+            }
         });
         ";
     }
