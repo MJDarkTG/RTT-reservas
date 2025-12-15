@@ -124,8 +124,9 @@ class RTT_Seller_Panel {
             $active_page = sanitize_text_field($_GET['panel'] ?? 'dashboard');
         }
 
-        // Cargar CSS externo (cacheable)
-        wp_enqueue_style('rtt-seller-shortcode-css', RTT_RESERVAS_PLUGIN_URL . 'assets/css/seller-shortcode.css', [], RTT_RESERVAS_VERSION);
+        // Cargar CSS directamente (funciona en shortcodes)
+        $css_url = RTT_RESERVAS_PLUGIN_URL . 'assets/css/seller-shortcode.css?v=' . RTT_RESERVAS_VERSION;
+        echo '<link rel="stylesheet" href="' . esc_url($css_url) . '" type="text/css" media="all" />';
         ?>
 
         <div class="rtt-panel-embedded">
