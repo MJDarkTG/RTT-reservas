@@ -232,6 +232,188 @@ class RTT_Seller_Panel {
     }
 
     /**
+     * Renderizar campos del formulario de cotización (compartido entre nueva y editar)
+     */
+    private function render_cotizacion_form_fields($tours, $cotizacion = null, $tipo_cambio = 3.70) {
+        $is_edit = !is_null($cotizacion);
+        ?>
+        <div class="form-section">
+            <h3>Datos del Cliente</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cliente_nombre">Nombre completo *</label>
+                    <input type="text" id="cliente_nombre" name="cliente_nombre" required value="<?php echo $is_edit ? esc_attr($cotizacion->cliente_nombre) : ''; ?>">
+                </div>
+                <div class="form-group">
+                    <label for="cliente_email">Email *</label>
+                    <input type="email" id="cliente_email" name="cliente_email" required value="<?php echo $is_edit ? esc_attr($cotizacion->cliente_email) : ''; ?>">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cliente_telefono">Teléfono</label>
+                    <input type="text" id="cliente_telefono" name="cliente_telefono" value="<?php echo $is_edit ? esc_attr($cotizacion->cliente_telefono) : ''; ?>">
+                </div>
+                <div class="form-group">
+                    <label for="cliente_pais">País</label>
+                    <input type="text" id="cliente_pais" name="cliente_pais" value="<?php echo $is_edit ? esc_attr($cotizacion->cliente_pais) : ''; ?>">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Detalles del Tour</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="tour">Tour *</label>
+                    <select id="tour" name="tour" required>
+                        <option value="">Seleccionar tour...</option>
+                        <?php foreach ($tours as $tour):
+                            $tour_name = $tour['name'];
+                            $tour_price = floatval($tour['price'] ?? 0);
+                            $price_display = $tour_price > 0 ? ' - $' . number_format($tour_price, 0) : '';
+                            $selected = $is_edit && $cotizacion->tour === $tour_name ? 'selected' : '';
+                        ?>
+                        <option value="<?php echo esc_attr($tour_name); ?>" data-price="<?php echo esc_attr($tour_price); ?>" <?php echo $selected; ?>>
+                            <?php echo esc_html($tour_name); ?><?php echo $price_display; ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="fecha_tour">Fecha del tour *</label>
+                    <input type="date" id="fecha_tour" name="fecha_tour" required value="<?php echo $is_edit ? esc_attr($cotizacion->fecha_tour) : ''; ?>">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cantidad_pasajeros">Cantidad de pasajeros *</label>
+                    <input type="number" id="cantidad_pasajeros" name="cantidad_pasajeros" value="<?php echo $is_edit ? esc_attr($cotizacion->cantidad_pasajeros) : '1'; ?>" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="moneda">Moneda</label>
+                    <select id="moneda" name="moneda">
+                        <option value="USD" <?php echo $is_edit && $cotizacion->moneda === 'USD' ? 'selected' : ''; ?>>USD ($)</option>
+                        <option value="PEN" <?php echo $is_edit && $cotizacion->moneda === 'PEN' ? 'selected' : ''; ?>>PEN (S/)</option>
+                        <option value="EUR" <?php echo $is_edit && $cotizacion->moneda === 'EUR' ? 'selected' : ''; ?>>EUR (€)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Precios</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="precio_unitario">Precio por persona *</label>
+                    <input type="number" id="precio_unitario" name="precio_unitario" value="<?php echo $is_edit ? esc_attr($cotizacion->precio_unitario) : '0'; ?>" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="descuento">Descuento</label>
+                    <div class="input-group">
+                        <input type="number" id="descuento" name="descuento" value="<?php echo $is_edit ? esc_attr($cotizacion->descuento) : '0'; ?>" min="0" step="0.01">
+                        <select id="descuento_tipo" name="descuento_tipo">
+                            <option value="porcentaje" <?php echo $is_edit && $cotizacion->descuento_tipo === 'porcentaje' ? 'selected' : ''; ?>>%</option>
+                            <option value="monto" <?php echo $is_edit && $cotizacion->descuento_tipo === 'monto' ? 'selected' : ''; ?>>Monto</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Subtotal</label>
+                    <div class="precio-display" id="subtotal">0.00</div>
+                </div>
+                <div class="form-group">
+                    <label>Total</label>
+                    <div class="precio-display precio-total" id="precio_total_display">0.00</div>
+                    <input type="hidden" id="precio_total" name="precio_total" value="<?php echo $is_edit ? esc_attr($cotizacion->precio_total) : '0'; ?>">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Información adicional</h3>
+            <div class="form-group">
+                <label for="notas">Notas para el cliente</label>
+                <textarea id="notas" name="notas" rows="3" placeholder="Incluye información relevante..."><?php echo $is_edit ? esc_textarea($cotizacion->notas) : ''; ?></textarea>
+            </div>
+            <div class="form-group">
+                <label for="validez_dias">Validez de la cotización (días)</label>
+                <input type="number" id="validez_dias" name="validez_dias" value="<?php echo $is_edit ? esc_attr($cotizacion->validez_dias) : '7'; ?>" min="1" max="30">
+            </div>
+        </div>
+
+        <div class="form-section costos-internos-section">
+            <div class="costos-header">
+                <div class="costos-header-icon">💰</div>
+                <div class="costos-header-text">
+                    <h3>Costos Internos</h3>
+                    <span class="costos-header-badge">Privado</span>
+                </div>
+                <div class="tipo-cambio-mini">
+                    <label>T/C:</label>
+                    <input type="number" id="tipo_cambio" name="tipo_cambio" step="0.01" min="1" value="<?php echo esc_attr($is_edit && isset($cotizacion->tipo_cambio) ? $cotizacion->tipo_cambio : $tipo_cambio); ?>">
+                </div>
+            </div>
+
+            <div class="costos-body">
+                <div class="costos-list" id="costos-items">
+                    <?php
+                    $costos_guardados = [];
+                    if ($is_edit && !empty($cotizacion->costos_json)) {
+                        $costos_guardados = json_decode($cotizacion->costos_json, true) ?: [];
+                    }
+                    if (empty($costos_guardados)) {
+                        $costos_guardados = [['concepto' => '', 'monto' => '']];
+                    }
+                    foreach ($costos_guardados as $costo):
+                    ?>
+                    <div class="costo-item">
+                        <div class="costo-drag">⋮⋮</div>
+                        <input type="text" name="costo_concepto[]" placeholder="Ej: Guía, Transporte, Entradas..." class="costo-concepto" value="<?php echo esc_attr($costo['concepto'] ?? ''); ?>">
+                        <div class="costo-monto-wrapper">
+                            <span class="costo-prefix">$</span>
+                            <input type="number" name="costo_monto[]" placeholder="0.00" min="0" step="0.01" class="costo-monto" value="<?php echo esc_attr($costo['monto'] ?? ''); ?>">
+                        </div>
+                        <button type="button" class="btn-remove-costo" title="Eliminar">×</button>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <button type="button" class="btn-add-costo-new" id="btn-add-costo">
+                    <span class="btn-add-icon">+</span> Agregar costo
+                </button>
+                <input type="hidden" id="costos_json" name="costos_json" value="<?php echo $is_edit ? esc_attr($cotizacion->costos_json ?? '') : ''; ?>">
+            </div>
+
+            <div class="costos-summary">
+                <div class="summary-card summary-costo">
+                    <div class="summary-icon">📊</div>
+                    <div class="summary-content">
+                        <span class="summary-label">Costo Total</span>
+                        <span class="summary-value" id="costo_total_display">$ 0.00</span>
+                    </div>
+                </div>
+                <div class="summary-card summary-ganancia" id="ganancia-card">
+                    <div class="summary-icon">📈</div>
+                    <div class="summary-content">
+                        <span class="summary-label">Ganancia</span>
+                        <span class="summary-value-main" id="ganancia_usd">$ 0.00</span>
+                        <span class="summary-value-secondary" id="ganancia_pen">S/ 0.00</span>
+                    </div>
+                    <div class="summary-badge" id="ganancia_pct">0%</div>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="notas_internas">📝 Notas internas</label>
+                <textarea id="notas_internas" name="notas_internas" rows="2" placeholder="Notas privadas (no aparecen en la cotización)..."><?php echo $is_edit ? esc_textarea($cotizacion->notas_internas ?? '') : ''; ?></textarea>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
      * Login para shortcode
      */
     private function render_login_shortcode() {
