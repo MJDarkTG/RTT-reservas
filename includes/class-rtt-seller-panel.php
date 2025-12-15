@@ -749,7 +749,72 @@ class RTT_Seller_Panel {
         $options = get_option('rtt_reservas_options', []);
 
         $this->render_header_shortcode('Configuración', 'configuracion');
-        $this->render_configuracion_form($options);
+        ?>
+        <div class="form-container">
+            <form id="config-form" class="cotizacion-form">
+                <div class="form-section">
+                    <h3>Tipo de Cambio</h3>
+                    <p class="section-description">Tipo de cambio USD → PEN para cálculo de ganancias.</p>
+                    <div class="form-row">
+                        <div class="form-group" style="max-width: 200px;">
+                            <label for="tipo_cambio">1 USD =</label>
+                            <div class="input-group">
+                                <input type="number" id="tipo_cambio" name="tipo_cambio" step="0.01" min="1" value="<?php echo esc_attr($options['tipo_cambio'] ?? '3.70'); ?>">
+                                <span style="padding: 10px; background: #f5f5f5; border-radius: 0 6px 6px 0; border: 1px solid #ddd; border-left: 0;">PEN</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Formas de Pago</h3>
+                    <p class="section-description">Esta información aparecerá en los PDFs de cotización.</p>
+                    <div class="form-group">
+                        <textarea id="cotizacion_formas_pago" name="cotizacion_formas_pago" rows="12" class="large-textarea"><?php
+                            echo esc_textarea($options['cotizacion_formas_pago'] ?? '1. TRANSFERENCIA BANCARIA
+   Banco: BCP - Banco de Crédito del Perú
+   Cuenta Corriente Soles: XXX-XXXXXXX-X-XX
+   Cuenta Corriente Dólares: XXX-XXXXXXX-X-XX
+   CCI: XXXXXXXXXXXXXXXXXXX
+   Titular: Ready To Travel Peru
+
+2. PAYPAL
+   Cuenta: pagos@readytotravelperu.com
+   (Se aplica comisión de 5%)
+
+3. PAGO EN EFECTIVO
+   En nuestras oficinas o al momento del tour
+
+* Enviar comprobante de pago a: reservas@readytotravelperu.com');
+                        ?></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Términos y Condiciones</h3>
+                    <div class="form-group">
+                        <textarea id="cotizacion_terminos" name="cotizacion_terminos" rows="10" class="large-textarea"><?php
+                            echo esc_textarea($options['cotizacion_terminos'] ?? '- Esta cotización tiene validez de 7 días a partir de la fecha de emisión.
+- Los precios están sujetos a disponibilidad y pueden variar sin previo aviso.
+- Para confirmar la reserva se requiere un depósito del 50% del total.
+- El saldo restante debe cancelarse 48 horas antes del inicio del tour.
+- Cancelaciones con más de 72 horas: devolución del 80% del depósito.
+- Cancelaciones con menos de 72 horas: no hay devolución.
+- Los tours están sujetos a condiciones climáticas.
+- Es obligatorio presentar documento de identidad el día del tour.
+- Menores de edad deben estar acompañados por un adulto responsable.');
+                        ?></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Guardar Configuración</button>
+                </div>
+
+                <div id="form-message" class="form-message" style="display: none;"></div>
+            </form>
+        </div>
+        <?php
         $this->render_footer_shortcode("
             $('#config-form').on('submit', function(e) {
                 e.preventDefault();
