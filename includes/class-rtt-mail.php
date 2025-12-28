@@ -96,7 +96,7 @@ class RTT_Mail {
 
         // Banner
         $h .= '<tr><td style="background:#7CB342;padding:20px;text-align:center;">';
-        $h .= '<h1 style="color:#fff;margin:0;font-size:24px;">¡Reserva Recibida!</h1>';
+        $h .= '<h1 style="color:#fff;margin:0;font-size:24px;">¡Pre - Reserva Recibida!</h1>';
         $h .= '</td></tr>';
 
         // Contenido
@@ -155,7 +155,7 @@ class RTT_Mail {
 
         // Banner
         $h .= '<tr><td style="background:#7CB342;padding:20px;text-align:center;">';
-        $h .= '<h1 style="color:#fff;margin:0;font-size:24px;">Booking Received!</h1>';
+        $h .= '<h1 style="color:#fff;margin:0;font-size:24px;">Pre - Booking Received!</h1>';
         $h .= '</td></tr>';
 
         // Contenido
