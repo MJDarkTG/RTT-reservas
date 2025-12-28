@@ -38,8 +38,11 @@ class RTT_Ajax {
         // Verificar nonce
         if (!wp_verify_nonce($_POST['rtt_nonce'] ?? '', 'rtt_reserva_nonce')) {
             $this->log_failed_attempt($ip, 'invalid_nonce');
+            $lang = sanitize_text_field($_POST['lang'] ?? 'es');
             wp_send_json_error([
-                'message' => __('Error de seguridad. Recarga la página e intenta de nuevo.', 'rtt-reservas')
+                'message' => $lang === 'en'
+                    ? 'Your session has expired. Please reload the page and try again.'
+                    : 'Tu sesión ha expirado. Por favor recarga la página e intenta de nuevo.'
             ]);
             return;
         }
