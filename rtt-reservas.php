@@ -279,11 +279,17 @@ final class RTT_Reservas {
             ]);
 
             // PayPal integration (if enabled)
-            if (class_exists('RTT_PayPal') && RTT_PayPal::is_enabled()) {
+            $paypal_class_exists = class_exists('RTT_PayPal');
+            $paypal_is_enabled = $paypal_class_exists ? RTT_PayPal::is_enabled() : false;
+
+            // Debug: Add inline script to show PayPal status
+            wp_add_inline_script('rtt-reservas-js', 'console.log("RTT PHP Debug: PayPal class exists = ' . ($paypal_class_exists ? 'true' : 'false') . ', is_enabled = ' . ($paypal_is_enabled ? 'true' : 'false') . '");', 'before');
+
+            if ($paypal_class_exists && $paypal_is_enabled) {
                 wp_enqueue_script(
                     'rtt-paypal-js',
                     RTT_RESERVAS_PLUGIN_URL . 'assets/js/rtt-paypal.js',
-                    ['jquery'],
+                    ['jquery', 'rtt-reservas-js'],
                     RTT_RESERVAS_VERSION,
                     true
                 );
