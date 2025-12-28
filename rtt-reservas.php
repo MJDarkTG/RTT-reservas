@@ -282,8 +282,18 @@ final class RTT_Reservas {
             $paypal_class_exists = class_exists('RTT_PayPal');
             $paypal_is_enabled = $paypal_class_exists ? RTT_PayPal::is_enabled() : false;
 
-            // Debug: Add inline script to show PayPal status
-            wp_add_inline_script('rtt-reservas-js', 'console.log("RTT PHP Debug: PayPal class exists = ' . ($paypal_class_exists ? 'true' : 'false') . ', is_enabled = ' . ($paypal_is_enabled ? 'true' : 'false') . '");', 'before');
+            // DEBUG: Check options directly
+            $options = get_option('rtt_reservas_options', []);
+            $debug_info = [
+                'class_exists' => $paypal_class_exists,
+                'is_enabled' => $paypal_is_enabled,
+                'paypal_enabled_option' => $options['paypal_enabled'] ?? 'NOT SET',
+                'client_id_set' => !empty($options['paypal_client_id']),
+                'secret_set' => !empty($options['paypal_secret'])
+            ];
+
+            // Add debug to localized script
+            wp_localize_script('rtt-reservas-js', 'rttPayPalDebug', $debug_info);
 
             if ($paypal_class_exists && $paypal_is_enabled) {
                 wp_enqueue_script(

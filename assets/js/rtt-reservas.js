@@ -530,6 +530,7 @@
         }
 
         // Mostrar sección de pago PayPal si está disponible
+        console.log('RTT: PayPal Debug from PHP:', typeof rttPayPalDebug !== 'undefined' ? rttPayPalDebug : 'NOT LOADED');
         console.log('RTT: Checking PayPal availability...', {
             RTTPayPal: typeof window.RTTPayPal,
             rttPayPal: typeof rttPayPal,
