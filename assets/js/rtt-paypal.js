@@ -216,19 +216,15 @@
          * Get amount to charge
          */
         getAmount: function() {
-            // Try to get from form data
             var amount = 0;
 
             // Check for cotizacion page
             if ($('#paypal-amount').length) {
                 amount = parseFloat($('#paypal-amount').val());
-                console.log('RTTPayPal getAmount: from #paypal-amount:', amount);
             }
             // Check for reservation form
             else if ($('#rtt-reserva-form').length) {
                 var precioText = $('#rtt-precio-tour').val() || '';
-                console.log('RTTPayPal getAmount: #rtt-precio-tour value:', precioText);
-
                 var match = precioText.match(/[\d.,]+/);
                 if (match) {
                     amount = parseFloat(match[0].replace(',', '.'));
@@ -236,14 +232,9 @@
 
                 // Multiply by number of passengers if unit price
                 var pasajeros = $('#rtt-reserva-form .rtt-passenger-card').length || 1;
-                console.log('RTTPayPal getAmount: pasajeros:', pasajeros, 'unit price:', amount);
-
-                if (amount > 0 && amount < 500) { // Assuming unit price if less than 500
+                if (amount > 0 && amount < 500) {
                     amount = amount * pasajeros;
                 }
-                console.log('RTTPayPal getAmount: total amount:', amount);
-            } else {
-                console.log('RTTPayPal getAmount: No form found');
             }
 
             return amount;
@@ -325,22 +316,17 @@
             var self = this;
 
             if (!rttPayPal || !rttPayPal.enabled) {
-                console.log('RTTPayPal: PayPal not enabled');
                 return;
             }
 
             var $section = $('#rtt-payment-section');
             if ($section.length) {
-                console.log('RTTPayPal: Showing payment section');
-
                 // Calculate and display the amount
                 var amount = this.getAmount();
-                console.log('RTTPayPal: Calculated amount:', amount);
                 $('#rtt-payment-total').text('$' + amount.toFixed(2) + ' USD');
 
                 // Only show if amount is valid
                 if (amount <= 0) {
-                    console.log('RTTPayPal: Amount is 0, hiding payment section');
                     return;
                 }
 
@@ -350,12 +336,10 @@
                 if (this.paypalLoaded && window.paypal) {
                     this.renderButtons();
                 } else {
-                    console.log('RTTPayPal: Waiting for SDK to load...');
                     // Check every 500ms for SDK to be ready
                     var checkInterval = setInterval(function() {
                         if (self.paypalLoaded && window.paypal) {
                             clearInterval(checkInterval);
-                            console.log('RTTPayPal: SDK loaded, rendering buttons');
                             self.renderButtons();
                         }
                     }, 500);
@@ -363,13 +347,8 @@
                     // Timeout after 10 seconds
                     setTimeout(function() {
                         clearInterval(checkInterval);
-                        if (!self.paypalLoaded) {
-                            console.error('RTTPayPal: SDK failed to load');
-                        }
                     }, 10000);
                 }
-            } else {
-                console.log('RTTPayPal: Payment section not found in DOM');
             }
         },
 

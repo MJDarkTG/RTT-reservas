@@ -423,7 +423,6 @@
 
             // Prevent double submission
             if (formSubmitting) {
-                console.log('RTT: Form already submitting, ignoring');
                 return;
             }
 
@@ -544,23 +543,13 @@
         }
 
         // Mostrar sección de pago PayPal si está disponible
-        console.log('RTT: PayPal Debug from PHP:', typeof rttPayPalDebug !== 'undefined' ? rttPayPalDebug : 'NOT LOADED');
-        console.log('RTT: Checking PayPal availability...', {
-            RTTPayPal: typeof window.RTTPayPal,
-            rttPayPal: typeof rttPayPal,
-            enabled: typeof rttPayPal !== 'undefined' ? rttPayPal.enabled : 'N/A'
-        });
-
         if (typeof window.RTTPayPal !== 'undefined' && typeof rttPayPal !== 'undefined' && rttPayPal.enabled) {
-            console.log('RTT: PayPal is available, showing payment section');
             // Guardar el ID de la reserva para el pago
             rttPayPal.reservaId = reservaId;
             rttPayPal.reservaCodigo = codigo;
             window.RTTPayPal.showPaymentSection();
             // No cerrar modal si PayPal está activo
             return;
-        } else {
-            console.log('RTT: PayPal not available, skipping payment section');
         }
 
         // Cerrar modal después de éxito si existe (solo si no hay PayPal)

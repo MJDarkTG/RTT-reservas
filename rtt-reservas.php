@@ -279,23 +279,7 @@ final class RTT_Reservas {
             ]);
 
             // PayPal integration (if enabled)
-            $paypal_class_exists = class_exists('RTT_PayPal');
-            $paypal_is_enabled = $paypal_class_exists ? RTT_PayPal::is_enabled() : false;
-
-            // DEBUG: Check options directly
-            $options = get_option('rtt_reservas_options', []);
-            $debug_info = [
-                'class_exists' => $paypal_class_exists,
-                'is_enabled' => $paypal_is_enabled,
-                'paypal_enabled_option' => $options['paypal_enabled'] ?? 'NOT SET',
-                'client_id_set' => !empty($options['paypal_client_id']),
-                'secret_set' => !empty($options['paypal_secret'])
-            ];
-
-            // Add debug to localized script
-            wp_localize_script('rtt-reservas-js', 'rttPayPalDebug', $debug_info);
-
-            if ($paypal_class_exists && $paypal_is_enabled) {
+            if (class_exists('RTT_PayPal') && RTT_PayPal::is_enabled()) {
                 wp_enqueue_script(
                     'rtt-paypal-js',
                     RTT_RESERVAS_PLUGIN_URL . 'assets/js/rtt-paypal.js',
