@@ -314,14 +314,42 @@
          * Show PayPal section in form
          */
         showPaymentSection: function() {
+            var self = this;
+
             if (!rttPayPal || !rttPayPal.enabled) {
+                console.log('RTTPayPal: PayPal not enabled');
                 return;
             }
 
             var $section = $('#rtt-payment-section');
             if ($section.length) {
+                console.log('RTTPayPal: Showing payment section');
                 $section.show();
-                this.renderButtons();
+
+                // Wait for SDK to load if not ready
+                if (this.paypalLoaded && window.paypal) {
+                    this.renderButtons();
+                } else {
+                    console.log('RTTPayPal: Waiting for SDK to load...');
+                    // Check every 500ms for SDK to be ready
+                    var checkInterval = setInterval(function() {
+                        if (self.paypalLoaded && window.paypal) {
+                            clearInterval(checkInterval);
+                            console.log('RTTPayPal: SDK loaded, rendering buttons');
+                            self.renderButtons();
+                        }
+                    }, 500);
+
+                    // Timeout after 10 seconds
+                    setTimeout(function() {
+                        clearInterval(checkInterval);
+                        if (!self.paypalLoaded) {
+                            console.error('RTTPayPal: SDK failed to load');
+                        }
+                    }, 10000);
+                }
+            } else {
+                console.log('RTTPayPal: Payment section not found in DOM');
             }
         },
 
