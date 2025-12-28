@@ -213,7 +213,7 @@
       private function add_title($pdf, $lang) {
           $pdf->SetFont('Helvetica', 'B', 16);
           $pdf->SetTextColor(212, 160, 23);
-          $title = $lang === 'en' ? 'PRE-BOOKING RECEIVED' : 'PRE-RESERVA RECIBIDA';
+          $title = $lang === 'en' ? 'PRE-BOOKING REGISTERED SUCCESSFULLY' : 'PRE-RESERVA REGISTRADA CON EXITO';
           $pdf->Cell(0, 10, rtt_utf8_to_iso($title), 0, 1, 'C');
 
           $pdf->SetFont('Helvetica', '', 10);
@@ -234,8 +234,8 @@
           $pdf->SetFont('Helvetica', 'I', 9);
           $pdf->SetTextColor(180, 80, 80);
           $note = $lang === 'en'
-              ? '* Your reservation will be confirmed once payment is received.'
-              : '* La reserva se confirmara una vez se reciba el pago.';
+              ? '* Your booking will be confirmed upon receipt and validation of payment.'
+              : '* La reserva quedara confirmada tras la recepcion y validacion del pago correspondiente.';
           $pdf->Cell(0, 5, rtt_utf8_to_iso($note), 0, 1, 'C');
 
           $pdf->Ln(5);
