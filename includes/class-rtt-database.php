@@ -9,7 +9,7 @@ if (!defined('ABSPATH')) {
 
 class RTT_Database {
 
-    const DB_VERSION = '1.10';
+    const DB_VERSION = '1.11';
 
     /**
      * Crear tablas en la base de datos
@@ -38,6 +38,11 @@ class RTT_Database {
             email_sent_at datetime DEFAULT NULL,
             email_attempts int(11) NOT NULL DEFAULT 0,
             email_error text,
+            payment_method varchar(50) DEFAULT NULL,
+            payment_status varchar(20) DEFAULT NULL,
+            transaction_id varchar(100) DEFAULT NULL,
+            payment_amount decimal(10,2) DEFAULT NULL,
+            payment_date datetime DEFAULT NULL,
             fecha_creacion datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             fecha_actualizacion datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
@@ -46,7 +51,8 @@ class RTT_Database {
             KEY fecha_tour (fecha_tour),
             KEY fecha_creacion (fecha_creacion),
             KEY tour (tour(100)),
-            KEY email (email(100))
+            KEY email (email(100)),
+            KEY payment_status (payment_status)
         ) $charset_collate;";
 
         // Tabla de pasajeros
@@ -127,6 +133,11 @@ class RTT_Database {
             enviada_at datetime DEFAULT NULL,
             aceptada_at datetime DEFAULT NULL,
             reserva_id bigint(20) UNSIGNED DEFAULT NULL,
+            payment_method varchar(50) DEFAULT NULL,
+            payment_status varchar(20) DEFAULT NULL,
+            transaction_id varchar(100) DEFAULT NULL,
+            payment_amount decimal(10,2) DEFAULT NULL,
+            payment_date datetime DEFAULT NULL,
             fecha_creacion datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             fecha_actualizacion datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
@@ -134,7 +145,8 @@ class RTT_Database {
             KEY vendedor_id (vendedor_id),
             KEY estado (estado),
             KEY cliente_email (cliente_email(100)),
-            KEY fecha_tour (fecha_tour)
+            KEY fecha_tour (fecha_tour),
+            KEY payment_status (payment_status)
         ) $charset_collate;";
 
         // Tabla de proveedores
@@ -166,7 +178,50 @@ class RTT_Database {
         // Agregar índice de tour si no existe (para instalaciones existentes)
         self::maybe_add_tour_index();
 
+        // Agregar campos de pago si no existen (para instalaciones existentes)
+        self::maybe_add_payment_fields();
+
         update_option('rtt_db_version', self::DB_VERSION);
+    }
+
+    /**
+     * Agregar campos de pago a tablas existentes
+     */
+    private static function maybe_add_payment_fields() {
+        global $wpdb;
+
+        // Campos a agregar a ambas tablas
+        $payment_fields = [
+            'payment_method' => 'varchar(50) DEFAULT NULL',
+            'payment_status' => 'varchar(20) DEFAULT NULL',
+            'transaction_id' => 'varchar(100) DEFAULT NULL',
+            'payment_amount' => 'decimal(10,2) DEFAULT NULL',
+            'payment_date' => 'datetime DEFAULT NULL',
+        ];
+
+        // Agregar a tabla de reservas
+        $table_reservas = $wpdb->prefix . 'rtt_reservas';
+        foreach ($payment_fields as $field => $definition) {
+            $column_exists = $wpdb->get_results($wpdb->prepare(
+                "SHOW COLUMNS FROM $table_reservas LIKE %s",
+                $field
+            ));
+            if (empty($column_exists)) {
+                $wpdb->query("ALTER TABLE $table_reservas ADD COLUMN $field $definition");
+            }
+        }
+
+        // Agregar a tabla de cotizaciones
+        $table_cotizaciones = $wpdb->prefix . 'rtt_cotizaciones';
+        foreach ($payment_fields as $field => $definition) {
+            $column_exists = $wpdb->get_results($wpdb->prepare(
+                "SHOW COLUMNS FROM $table_cotizaciones LIKE %s",
+                $field
+            ));
+            if (empty($column_exists)) {
+                $wpdb->query("ALTER TABLE $table_cotizaciones ADD COLUMN $field $definition");
+            }
+        }
     }
 
     /**

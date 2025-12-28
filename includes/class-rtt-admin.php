@@ -214,6 +214,50 @@ class RTT_Admin {
             ['field' => 'whatsapp_apikey']
         );
 
+        // Sección PayPal
+        add_settings_section(
+            'rtt_paypal_section',
+            __('Pagos con PayPal', 'rtt-reservas'),
+            [$this, 'paypal_section_callback'],
+            'rtt-reservas'
+        );
+
+        add_settings_field(
+            'paypal_enabled',
+            __('Activar PayPal', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_paypal_section',
+            ['field' => 'paypal_enabled']
+        );
+
+        add_settings_field(
+            'paypal_sandbox',
+            __('Modo Sandbox', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_paypal_section',
+            ['field' => 'paypal_sandbox']
+        );
+
+        add_settings_field(
+            'paypal_client_id',
+            __('Client ID', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_paypal_section',
+            ['field' => 'paypal_client_id']
+        );
+
+        add_settings_field(
+            'paypal_secret',
+            __('Secret Key', 'rtt-reservas'),
+            [$this, 'render_field'],
+            'rtt-reservas',
+            'rtt_paypal_section',
+            ['field' => 'paypal_secret']
+        );
+
         // Sección Cotizaciones
         add_settings_section(
             'rtt_cotizacion_section',
@@ -267,6 +311,19 @@ class RTT_Admin {
         echo '<li>' . __('Recibirás tu API Key. Cópiala aquí abajo.', 'rtt-reservas') . '</li>';
         echo '</ol>';
         echo '<p><a href="https://www.callmebot.com/blog/free-api-whatsapp-messages/" target="_blank">' . __('Ver instrucciones completas', 'rtt-reservas') . ' →</a></p>';
+    }
+
+    /**
+     * Callback de sección PayPal
+     */
+    public function paypal_section_callback() {
+        echo '<p>' . __('Acepta pagos con PayPal en reservas y cotizaciones. Los pagos se procesan en USD.', 'rtt-reservas') . '</p>';
+        echo '<p><strong>' . __('Pasos para configurar:', 'rtt-reservas') . '</strong></p>';
+        echo '<ol>';
+        echo '<li>' . __('Crea una app en <a href="https://developer.paypal.com/dashboard/applications/sandbox" target="_blank">PayPal Developer Dashboard</a>', 'rtt-reservas') . '</li>';
+        echo '<li>' . __('Copia el Client ID y Secret Key', 'rtt-reservas') . '</li>';
+        echo '<li>' . __('Activa "Modo Sandbox" para pruebas, desactívalo en producción', 'rtt-reservas') . '</li>';
+        echo '</ol>';
     }
 
     /**
@@ -356,6 +413,31 @@ class RTT_Admin {
                 echo '<p class="description">' . __('API Key que te envió CallMeBot por WhatsApp', 'rtt-reservas') . '</p>';
                 break;
 
+            // Campos PayPal
+            case 'paypal_enabled':
+                echo '<label>';
+                echo '<input type="checkbox" name="rtt_reservas_options[' . esc_attr($field) . ']" value="1"' . checked($value, '1', false) . '>';
+                echo ' ' . __('Permitir pagos con PayPal en reservas y cotizaciones', 'rtt-reservas');
+                echo '</label>';
+                break;
+
+            case 'paypal_sandbox':
+                echo '<label>';
+                echo '<input type="checkbox" name="rtt_reservas_options[' . esc_attr($field) . ']" value="1"' . checked($value, '1', false) . '>';
+                echo ' ' . __('Usar modo Sandbox (pruebas) - Desactiva esto en producción', 'rtt-reservas');
+                echo '</label>';
+                break;
+
+            case 'paypal_client_id':
+                echo '<input type="text" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value) . '" class="large-text">';
+                echo '<p class="description">' . __('Client ID de tu aplicación PayPal', 'rtt-reservas') . '</p>';
+                break;
+
+            case 'paypal_secret':
+                echo '<input type="password" name="rtt_reservas_options[' . esc_attr($field) . ']" value="' . esc_attr($value) . '" class="large-text">';
+                echo '<p class="description">' . __('Secret Key de tu aplicación PayPal (se guarda encriptado)', 'rtt-reservas') . '</p>';
+                break;
+
             case 'cotizacion_formas_pago':
                 $default = "1. TRANSFERENCIA BANCARIA
    Banco: BCP - Banco de Crédito del Perú
@@ -434,6 +516,12 @@ class RTT_Admin {
         $sanitized['whatsapp_phone'] = preg_replace('/[^0-9+]/', '', $input['whatsapp_phone'] ?? '');
         $sanitized['whatsapp_apikey'] = sanitize_text_field($input['whatsapp_apikey'] ?? '');
 
+        // Campos de PayPal
+        $sanitized['paypal_enabled'] = isset($input['paypal_enabled']) ? '1' : '';
+        $sanitized['paypal_sandbox'] = isset($input['paypal_sandbox']) ? '1' : '';
+        $sanitized['paypal_client_id'] = sanitize_text_field($input['paypal_client_id'] ?? '');
+        $sanitized['paypal_secret'] = sanitize_text_field($input['paypal_secret'] ?? '');
+
         // Campos de Cotización (permitir saltos de línea)
         $sanitized['cotizacion_formas_pago'] = sanitize_textarea_field($input['cotizacion_formas_pago'] ?? '');
         $sanitized['cotizacion_terminos'] = sanitize_textarea_field($input['cotizacion_terminos'] ?? '');
@@ -490,6 +578,16 @@ class RTT_Admin {
                 </button>
                 <span id="rtt-whatsapp-result" style="margin-left: 10px;"></span>
             </div>
+
+            <div class="rtt-test-paypal" style="background: #fff; padding: 20px; border: 1px solid #ccc; border-left: 4px solid #0070ba; margin-top: 20px;">
+                <h3 style="color: #0070ba;"><?php _e('Probar conexión PayPal', 'rtt-reservas'); ?></h3>
+                <p><?php _e('Verifica que las credenciales de PayPal estén correctas.', 'rtt-reservas'); ?></p>
+                <button type="button" id="rtt-test-paypal" class="button button-secondary" style="background: #0070ba; color: white; border-color: #0070ba;">
+                    <span class="dashicons dashicons-money-alt" style="margin-top: 3px;"></span>
+                    <?php _e('Probar conexión', 'rtt-reservas'); ?>
+                </button>
+                <span id="rtt-paypal-result" style="margin-left: 10px;"></span>
+            </div>
         </div>
 
         <script>
@@ -534,6 +632,28 @@ class RTT_Admin {
                 }).fail(function() {
                     btn.prop('disabled', false);
                     $('#rtt-whatsapp-result').html('<span style="color: red;">✗ Error de conexión</span>');
+                });
+            });
+
+            // Test PayPal
+            $('#rtt-test-paypal').on('click', function() {
+                var btn = $(this);
+                btn.prop('disabled', true);
+                $('#rtt-paypal-result').text('<?php _e('Verificando...', 'rtt-reservas'); ?>');
+
+                $.post(ajaxurl, {
+                    action: 'rtt_test_paypal',
+                    nonce: '<?php echo wp_create_nonce('rtt_test_paypal'); ?>'
+                }, function(response) {
+                    btn.prop('disabled', false);
+                    if (response.success) {
+                        $('#rtt-paypal-result').html('<span style="color: green;">✓ ' + response.data.message + '</span>');
+                    } else {
+                        $('#rtt-paypal-result').html('<span style="color: red;">✗ ' + response.data.message + '</span>');
+                    }
+                }).fail(function() {
+                    btn.prop('disabled', false);
+                    $('#rtt-paypal-result').html('<span style="color: red;">✗ Error de conexión</span>');
                 });
             });
         });

@@ -273,6 +273,28 @@ class RTT_Shortcode {
 
                 <!-- Mensaje de éxito/error -->
                 <div id="rtt-message" class="rtt-message" style="display: none;"></div>
+
+                <?php if (class_exists('RTT_PayPal') && RTT_PayPal::is_enabled()): ?>
+                <!-- PayPal Payment Section (Optional) -->
+                <div id="rtt-payment-section" class="rtt-payment-section" style="display: none;">
+                    <div class="rtt-payment-header">
+                        <h3><?php echo $lang === 'en' ? 'Complete Your Payment (Optional)' : 'Completar Pago (Opcional)'; ?></h3>
+                        <p><?php echo $lang === 'en'
+                            ? 'You can pay now to confirm your reservation immediately, or pay later.'
+                            : 'Puedes pagar ahora para confirmar tu reserva inmediatamente, o pagar después.'; ?></p>
+                    </div>
+                    <div class="rtt-payment-amount">
+                        <span class="rtt-payment-label"><?php echo $lang === 'en' ? 'Total Amount:' : 'Monto Total:'; ?></span>
+                        <span id="rtt-payment-total" class="rtt-payment-value">$0.00 USD</span>
+                    </div>
+                    <div id="paypal-button-container"></div>
+                    <p class="rtt-payment-skip">
+                        <a href="#" id="rtt-skip-payment">
+                            <?php echo $lang === 'en' ? 'Skip payment, I will pay later' : 'Omitir pago, pagaré después'; ?>
+                        </a>
+                    </p>
+                </div>
+                <?php endif; ?>
             </form>
 
             <!-- Template para pasajero (usado por JS) -->

@@ -608,6 +608,69 @@
     vertical-align: middle;
 }
 
+/* PayPal Payment Section */
+.rtt-payment-section {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: var(--rtt-radius);
+    padding: 30px;
+    margin: 20px;
+    text-align: center;
+    border: 2px solid #0070ba;
+    animation: messageSlideIn 0.4s ease;
+}
+
+.rtt-payment-header h3 {
+    color: #0070ba;
+    margin: 0 0 10px 0;
+    font-size: 20px;
+}
+
+.rtt-payment-header p {
+    color: #666;
+    margin: 0 0 20px 0;
+    font-size: 14px;
+}
+
+.rtt-payment-amount {
+    background: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: inline-block;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.rtt-payment-label {
+    color: #666;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+.rtt-payment-value {
+    color: #0070ba;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+#paypal-button-container {
+    max-width: 400px;
+    margin: 0 auto 20px;
+}
+
+.rtt-payment-skip {
+    margin: 15px 0 0;
+}
+
+.rtt-payment-skip a {
+    color: #999;
+    font-size: 13px;
+    text-decoration: underline;
+}
+
+.rtt-payment-skip a:hover {
+    color: #666;
+}
+
 /* Success screen after submission */
 .rtt-success-screen {
     padding: 40px 20px;

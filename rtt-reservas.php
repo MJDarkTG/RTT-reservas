@@ -100,6 +100,8 @@ final class RTT_Reservas {
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-admin-stats.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-admin-calendar.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-whatsapp.php';
+        require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-paypal.php';
+        require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-payment-page.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-cotizacion-pdf.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-seller-panel.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-manual.php';
@@ -162,6 +164,10 @@ final class RTT_Reservas {
         // Registrar botón de reserva con modal
         $booking_button = new RTT_Booking_Button();
         $booking_button->init();
+
+        // Registrar página de pago de cotizaciones
+        $payment_page = new RTT_Payment_Page();
+        $payment_page->init();
 
         // Registrar assets
         add_action('wp_enqueue_scripts', [$this, 'enqueue_public_assets']);
@@ -271,6 +277,26 @@ final class RTT_Reservas {
                 'maxPassengers' => $max_passengers,
                 'i18n' => $this->get_js_translations()
             ]);
+
+            // PayPal integration (if enabled)
+            if (class_exists('RTT_PayPal') && RTT_PayPal::is_enabled()) {
+                wp_enqueue_script(
+                    'rtt-paypal-js',
+                    RTT_RESERVAS_PLUGIN_URL . 'assets/js/rtt-paypal.js',
+                    ['jquery'],
+                    RTT_RESERVAS_VERSION,
+                    true
+                );
+
+                $paypal_config = RTT_PayPal::get_config();
+                wp_localize_script('rtt-paypal-js', 'rttPayPal', [
+                    'enabled' => true,
+                    'clientId' => $paypal_config['client_id'],
+                    'sandbox' => $paypal_config['sandbox'],
+                    'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'nonce' => wp_create_nonce('rtt_paypal_nonce'),
+                ]);
+            }
         }
     }
 

@@ -1474,6 +1474,21 @@ class RTT_Seller_Panel {
                     <p><strong>Notas:</strong><br><?php echo nl2br(esc_html($cotizacion->notas)); ?></p>
                     <?php endif; ?>
 
+                    <?php
+                    // Mostrar botón de pago si PayPal está habilitado
+                    $paypal_enabled = class_exists('RTT_PayPal') && RTT_PayPal::is_enabled();
+                    $payment_page_url = $this->get_payment_page_url($cotizacion->codigo);
+                    if ($paypal_enabled && $payment_page_url):
+                    ?>
+                    <div style="text-align: center; margin: 25px 0; padding: 20px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 10px; border: 2px solid #0070ba;">
+                        <p style="margin: 0 0 15px; font-size: 16px; color: #333;">¿Listo para confirmar tu reserva?</p>
+                        <a href="<?php echo esc_url($payment_page_url); ?>" style="display: inline-block; padding: 15px 40px; background: #0070ba; color: white; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px;">
+                            Pagar Ahora con PayPal
+                        </a>
+                        <p style="margin: 15px 0 0; font-size: 12px; color: #666;">Pago seguro con PayPal o tarjeta de crédito</p>
+                    </div>
+                    <?php endif; ?>
+
                     <p>Para confirmar tu reserva, por favor revisa el PDF adjunto donde encontrarás las formas de pago y términos.</p>
 
                     <p>¿Tienes preguntas? Responde a este correo o contáctanos por WhatsApp.</p>
@@ -1487,6 +1502,50 @@ class RTT_Seller_Panel {
         </html>
         <?php
         return ob_get_clean();
+    }
+
+    /**
+     * Obtener URL de la página de pago para cotizaciones
+     * Busca la página con el shortcode [rtt_pago_cotizacion]
+     *
+     * @param string $codigo Código de la cotización
+     * @return string|false URL de la página o false si no existe
+     */
+    private function get_payment_page_url($codigo) {
+        // Buscar página con el shortcode
+        $pages = get_posts([
+            'post_type' => 'page',
+            'post_status' => 'publish',
+            'posts_per_page' => 1,
+            's' => '[rtt_pago_cotizacion'
+        ]);
+
+        if (empty($pages)) {
+            // Intentar buscar por contenido del shortcode
+            global $wpdb;
+            $page_id = $wpdb->get_var(
+                "SELECT ID FROM {$wpdb->posts}
+                WHERE post_type = 'page'
+                AND post_status = 'publish'
+                AND post_content LIKE '%[rtt_pago_cotizacion%'
+                LIMIT 1"
+            );
+
+            if (!$page_id) {
+                return false;
+            }
+
+            $page_url = get_permalink($page_id);
+        } else {
+            $page_url = get_permalink($pages[0]->ID);
+        }
+
+        if (!$page_url) {
+            return false;
+        }
+
+        // Agregar código de cotización como parámetro
+        return add_query_arg('codigo', $codigo, $page_url);
     }
 
     /**
