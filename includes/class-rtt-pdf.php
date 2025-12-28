@@ -213,7 +213,7 @@
       private function add_title($pdf, $lang) {
           $pdf->SetFont('Helvetica', 'B', 16);
           $pdf->SetTextColor(212, 160, 23);
-          $title = $lang === 'en' ? 'BOOKING CONFIRMATION' : 'CONFIRMACION DE RESERVA';
+          $title = $lang === 'en' ? 'PRE-BOOKING RECEIVED' : 'PRE-RESERVA RECIBIDA';
           $pdf->Cell(0, 10, rtt_utf8_to_iso($title), 0, 1, 'C');
 
           $pdf->SetFont('Helvetica', '', 10);
@@ -229,7 +229,16 @@
           $now = new DateTime('now', $peru_tz);
           $pdf->Cell(0, 5, $date_text . $now->format('d/m/Y H:i'), 0, 1, 'C');
 
-          $pdf->Ln(8);
+          // Nota de confirmación pendiente de pago
+          $pdf->Ln(3);
+          $pdf->SetFont('Helvetica', 'I', 9);
+          $pdf->SetTextColor(180, 80, 80);
+          $note = $lang === 'en'
+              ? '* Your reservation will be confirmed once payment is received.'
+              : '* La reserva se confirmara una vez se reciba el pago.';
+          $pdf->Cell(0, 5, rtt_utf8_to_iso($note), 0, 1, 'C');
+
+          $pdf->Ln(5);
       }
 
       private function add_tour_info($pdf, $data, $lang) {

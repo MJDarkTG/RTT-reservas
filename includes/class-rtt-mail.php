@@ -27,8 +27,8 @@ class RTT_Mail {
 
         $to = $data["representante"]["email"];
         $subject = $lang === "en"
-            ? ($options["email_subject_en"] ?? "Booking Confirmation")
-            : ($options["email_subject_es"] ?? "Confirmacion de Reserva");
+            ? ($options["email_subject_en"] ?? "Pre-Booking Received")
+            : ($options["email_subject_es"] ?? "Pre-Reserva Recibida");
 
         $message = $this->get_email_template($data, $lang);
 
