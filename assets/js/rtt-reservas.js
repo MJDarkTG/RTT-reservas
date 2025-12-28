@@ -414,9 +414,18 @@
     /**
      * Inicializar envío del formulario
      */
+    var formSubmitting = false; // Flag to prevent double submission
+
     function initFormSubmit($form) {
-        $form.on('submit', function(e) {
+        // Remove any existing handlers to prevent duplicates
+        $form.off('submit.rttReservas').on('submit.rttReservas', function(e) {
             e.preventDefault();
+
+            // Prevent double submission
+            if (formSubmitting) {
+                console.log('RTT: Form already submitting, ignoring');
+                return;
+            }
 
             // Validar último paso
             if (!validateStep(3)) {
@@ -428,6 +437,9 @@
                 showMessage(rttReservas.i18n.minPassengers, 'error');
                 return;
             }
+
+            // Set submitting flag
+            formSubmitting = true;
 
             // Deshabilitar botón y mostrar loading overlay
             var $submitBtn = $form.find('.rtt-btn-submit');
@@ -457,12 +469,14 @@
 
                         showMessage(response.data.message, 'error');
                         $submitBtn.prop('disabled', false).html(originalText);
+                        formSubmitting = false; // Reset flag on error
                     }
                 },
                 error: function() {
                     hideLoadingOverlay($form);
                     showMessage(rttReservas.i18n.error, 'error');
                     $submitBtn.prop('disabled', false).html(originalText);
+                    formSubmitting = false; // Reset flag on error
                 }
             });
         });
