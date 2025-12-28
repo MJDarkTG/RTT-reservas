@@ -512,10 +512,10 @@
      * Mostrar pantalla de éxito
      */
     function showSuccessScreen($form, codigo, message, reservaId) {
-        var titleText = rttReservas.lang === 'en' ? 'Booking Sent Successfully!' : '¡Reserva Enviada Exitosamente!';
+        var titleText = rttReservas.lang === 'en' ? 'Pre-Booking Received!' : '¡Pre-Reserva Recibida!';
         var messageText = rttReservas.lang === 'en'
-            ? 'We have received your booking. You will receive a confirmation email shortly.'
-            : 'Hemos recibido tu reserva. Recibirás un correo de confirmación en breve.';
+            ? 'We have received your request. You will receive an email with details and payment options.'
+            : 'Hemos recibido tu solicitud. Recibirás un correo con los detalles y formas de pago.';
         var codeLabel = rttReservas.lang === 'en' ? 'Your booking code:' : 'Tu código de reserva:';
 
         var $successScreen = $('<div class="rtt-success-screen">' +
