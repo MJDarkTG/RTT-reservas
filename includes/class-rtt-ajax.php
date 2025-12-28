@@ -13,10 +13,10 @@ class RTT_Ajax {
      * Procesar envío de reserva
      */
     public function submit_reserva() {
-        // Rate limiting: máximo 1 envío cada 30 segundos por IP
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $rate_key = 'rtt_rate_' . md5($ip);
 
+        // Rate limiting: máximo 1 envío exitoso cada 10 segundos por IP
         if (get_transient($rate_key)) {
             $this->log_failed_attempt($ip, 'rate_limit');
             wp_send_json_error([
@@ -24,9 +24,6 @@ class RTT_Ajax {
             ]);
             return;
         }
-
-        // Establecer rate limit por 30 segundos
-        set_transient($rate_key, true, 30);
 
         // Honeypot anti-spam: si el campo tiene valor, es un bot
         if (!empty($_POST['rtt_website_url'])) {
@@ -94,6 +91,9 @@ class RTT_Ajax {
                 RTT_WhatsApp::send_new_reservation_alert($reserva);
             }
         }
+
+        // Establecer rate limit por 10 segundos después de envío exitoso
+        set_transient($rate_key, true, 10);
 
         // Respuesta exitosa (inmediata, sin esperar el email)
         $lang = sanitize_text_field($_POST['lang'] ?? 'es');
