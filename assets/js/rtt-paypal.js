@@ -222,10 +222,13 @@
             // Check for cotizacion page
             if ($('#paypal-amount').length) {
                 amount = parseFloat($('#paypal-amount').val());
+                console.log('RTTPayPal getAmount: from #paypal-amount:', amount);
             }
             // Check for reservation form
             else if ($('#rtt-reserva-form').length) {
                 var precioText = $('#rtt-precio-tour').val() || '';
+                console.log('RTTPayPal getAmount: #rtt-precio-tour value:', precioText);
+
                 var match = precioText.match(/[\d.,]+/);
                 if (match) {
                     amount = parseFloat(match[0].replace(',', '.'));
@@ -233,9 +236,14 @@
 
                 // Multiply by number of passengers if unit price
                 var pasajeros = $('#rtt-reserva-form .rtt-passenger-card').length || 1;
+                console.log('RTTPayPal getAmount: pasajeros:', pasajeros, 'unit price:', amount);
+
                 if (amount > 0 && amount < 500) { // Assuming unit price if less than 500
                     amount = amount * pasajeros;
                 }
+                console.log('RTTPayPal getAmount: total amount:', amount);
+            } else {
+                console.log('RTTPayPal getAmount: No form found');
             }
 
             return amount;
@@ -324,6 +332,18 @@
             var $section = $('#rtt-payment-section');
             if ($section.length) {
                 console.log('RTTPayPal: Showing payment section');
+
+                // Calculate and display the amount
+                var amount = this.getAmount();
+                console.log('RTTPayPal: Calculated amount:', amount);
+                $('#rtt-payment-total').text('$' + amount.toFixed(2) + ' USD');
+
+                // Only show if amount is valid
+                if (amount <= 0) {
+                    console.log('RTTPayPal: Amount is 0, hiding payment section');
+                    return;
+                }
+
                 $section.show();
 
                 // Wait for SDK to load if not ready
