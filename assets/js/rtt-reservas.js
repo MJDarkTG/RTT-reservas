@@ -450,7 +450,7 @@
                         trackFormEvent('form_submit', 3, { codigo: response.data.codigo });
 
                         // Mostrar pantalla de éxito
-                        showSuccessScreen($form, response.data.codigo, response.data.message);
+                        showSuccessScreen($form, response.data.codigo, response.data.message, response.data.reserva_id);
                     } else {
                         // Tracking: error en envío
                         trackFormEvent('form_error', 3, { error: response.data.message });
@@ -498,7 +498,7 @@
     /**
      * Mostrar pantalla de éxito
      */
-    function showSuccessScreen($form, codigo, message) {
+    function showSuccessScreen($form, codigo, message, reservaId) {
         var titleText = rttReservas.lang === 'en' ? 'Booking Sent Successfully!' : '¡Reserva Enviada Exitosamente!';
         var messageText = rttReservas.lang === 'en'
             ? 'We have received your booking. You will receive a confirmation email shortly.'
@@ -529,7 +529,17 @@
             }
         }
 
-        // Cerrar modal después de éxito si existe
+        // Mostrar sección de pago PayPal si está disponible
+        if (typeof window.RTTPayPal !== 'undefined' && typeof rttPayPal !== 'undefined' && rttPayPal.enabled) {
+            // Guardar el ID de la reserva para el pago
+            rttPayPal.reservaId = reservaId;
+            rttPayPal.reservaCodigo = codigo;
+            window.RTTPayPal.showPaymentSection();
+            // No cerrar modal si PayPal está activo
+            return;
+        }
+
+        // Cerrar modal después de éxito si existe (solo si no hay PayPal)
         setTimeout(function() {
             if (typeof window.rttCloseBookingModal === 'function') {
                 window.rttCloseBookingModal();

@@ -111,7 +111,9 @@
                         nonce: rttPayPal.nonce,
                         amount: amount,
                         description: description,
-                        reference_id: self.getReferenceId()
+                        reference_id: self.getReferenceId(),
+                        reserva_id: rttPayPal.reservaId || '',
+                        cotizacion_id: rttPayPal.cotizacionId || ''
                     },
                     success: function(response) {
                         if (response.success && response.data.order_id) {
@@ -259,14 +261,16 @@
          * Get reserva ID (if exists)
          */
         getReservaId: function() {
-            return $('#reserva-id').val() || 0;
+            // Primero checar variable JavaScript, luego campo hidden
+            return rttPayPal.reservaId || $('#reserva-id').val() || 0;
         },
 
         /**
          * Get cotizacion ID (if exists)
          */
         getCotizacionId: function() {
-            return $('#cotizacion-id').val() || 0;
+            // Primero checar variable JavaScript, luego campo hidden
+            return rttPayPal.cotizacionId || $('#cotizacion-id').val() || 0;
         },
 
         /**

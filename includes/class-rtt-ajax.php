@@ -103,7 +103,8 @@ class RTT_Ajax {
 
         wp_send_json_success([
             'message' => $success_message,
-            'codigo' => $reserva_result['codigo']
+            'codigo' => $reserva_result['codigo'],
+            'reserva_id' => $reserva_result['id']
         ]);
     }
 
