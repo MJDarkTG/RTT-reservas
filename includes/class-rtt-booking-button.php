@@ -274,6 +274,26 @@ class RTT_Booking_Button {
                 'close' => __('Cerrar', 'rtt-reservas'),
             ]
         ]);
+
+        // PayPal integration (if enabled)
+        if (class_exists('RTT_PayPal') && RTT_PayPal::is_enabled()) {
+            wp_enqueue_script(
+                'rtt-paypal-js',
+                RTT_RESERVAS_PLUGIN_URL . 'assets/js/rtt-paypal.js',
+                ['jquery', 'rtt-reservas-js'],
+                RTT_RESERVAS_VERSION,
+                true
+            );
+
+            $paypal_config = RTT_PayPal::get_config();
+            wp_localize_script('rtt-paypal-js', 'rttPayPal', [
+                'enabled' => true,
+                'clientId' => $paypal_config['client_id'],
+                'sandbox' => $paypal_config['sandbox'],
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('rtt_paypal_nonce'),
+            ]);
+        }
     }
 
     /**
