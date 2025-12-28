@@ -521,7 +521,10 @@
         var $successScreen = $('<div class="rtt-success-screen">' +
             '<div class="rtt-success-icon"></div>' +
             '<h3 class="rtt-success-title">' + titleText + '</h3>' +
-            '<p class="rtt-success-message">' + messageText + '</p>' +
+            '<div class="rtt-payment-notice">' +
+                '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>' +
+                '<span>' + messageText + '</span>' +
+            '</div>' +
             '<p style="margin-bottom: 10px; color: #6c757d;">' + codeLabel + '</p>' +
             '<div class="rtt-success-code">' + codigo + '</div>' +
         '</div>');
@@ -548,16 +551,9 @@
             rttPayPal.reservaId = reservaId;
             rttPayPal.reservaCodigo = codigo;
             window.RTTPayPal.showPaymentSection();
-            // No cerrar modal si PayPal está activo
-            return;
         }
 
-        // Cerrar modal después de éxito si existe (solo si no hay PayPal)
-        setTimeout(function() {
-            if (typeof window.rttCloseBookingModal === 'function') {
-                window.rttCloseBookingModal();
-            }
-        }, 5000);
+        // No cerrar modal automáticamente - el usuario lo cierra manualmente
     }
 
     /**
