@@ -777,6 +777,19 @@ class RTT_Admin_Reservas {
         $from_name = $options['from_name'] ?? 'Ready To Travel Peru';
         $from_email = $options['from_email'] ?? get_option('admin_email');
 
+        // Configurar SMTP si está disponible
+        if (!empty($options['smtp_host']) && !empty($options['smtp_user'])) {
+            add_action('phpmailer_init', function($phpmailer) use ($options) {
+                $phpmailer->isSMTP();
+                $phpmailer->Host = $options['smtp_host'];
+                $phpmailer->SMTPAuth = true;
+                $phpmailer->Username = $options['smtp_user'];
+                $phpmailer->Password = $options['smtp_pass'];
+                $phpmailer->SMTPSecure = $options['smtp_secure'] ?? 'ssl';
+                $phpmailer->Port = intval($options['smtp_port'] ?? 465);
+            });
+        }
+
         $headers = [
             'Content-Type: text/html; charset=UTF-8',
             'From: ' . $from_name . ' <' . $from_email . '>'
@@ -832,7 +845,7 @@ class RTT_Admin_Reservas {
         $html .= '<table style="background:#FFF9E6;border-left:4px solid #D4A017;margin:20px 0;width:100%;"><tr><td style="padding:20px;">';
         $html .= '<p style="margin:5px 0;"><strong>' . ($lang === 'en' ? 'Reservation:' : 'Reserva:') . '</strong> ' . esc_html($reserva->codigo) . '</p>';
         $html .= '<p style="margin:5px 0;"><strong>' . ($lang === 'en' ? 'Tour:' : 'Tour:') . '</strong> ' . esc_html($reserva->tour) . '</p>';
-        $html .= '<p style="margin:5px 0;"><strong>' . ($lang === 'en' ? 'Date:' : 'Fecha:') . '</strong> ' . date('d/m/Y', strtotime($reserva->fecha)) . '</p>';
+        $html .= '<p style="margin:5px 0;"><strong>' . ($lang === 'en' ? 'Date:' : 'Fecha:') . '</strong> ' . date('d/m/Y', strtotime($reserva->fecha_tour)) . '</p>';
         $html .= '</td></tr></table>';
 
         // Botón de pago

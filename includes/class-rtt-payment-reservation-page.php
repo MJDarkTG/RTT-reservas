@@ -186,7 +186,13 @@ class RTT_Payment_Reservation_Page {
         $paypal_enabled = class_exists('RTT_PayPal') && RTT_PayPal::is_enabled();
 
         // Calcular comisión PayPal
-        $precio_base = floatval($reserva->precio ?? 0);
+        // Extraer número del campo precio (puede tener formato "USD $150" o "150")
+        $precio_text = $reserva->precio ?? '0';
+        $precio_base = 0;
+        if (preg_match('/[\d.,]+/', $precio_text, $matches)) {
+            $precio_base = floatval(str_replace(',', '.', $matches[0]));
+        }
+
         $comision_paypal = ($precio_base * 0.044) + 0.30;
         $precio_total = $precio_base + $comision_paypal;
 
@@ -227,7 +233,7 @@ class RTT_Payment_Reservation_Page {
 
                     <div class="rtt-detail-row">
                         <span class="rtt-detail-label"><?php echo $lang === 'en' ? 'Date:' : 'Fecha:'; ?></span>
-                        <span class="rtt-detail-value"><?php echo esc_html(date('d/m/Y', strtotime($reserva->fecha))); ?></span>
+                        <span class="rtt-detail-value"><?php echo esc_html(date('d/m/Y', strtotime($reserva->fecha_tour))); ?></span>
                     </div>
 
                     <div class="rtt-detail-row">
