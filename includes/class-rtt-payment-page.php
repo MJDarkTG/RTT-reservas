@@ -133,12 +133,25 @@ class RTT_Payment_Page {
                     </div>
                 </div>
 
-                <!-- Monto total -->
-                <div class="rtt-payment-total">
-                    <span class="rtt-total-label"><?php echo $lang === 'en' ? 'Total Amount:' : 'Monto Total:'; ?></span>
-                    <span class="rtt-total-value">
-                        $<?php echo number_format($cotizacion->precio_total, 2); ?> <?php echo esc_html($cotizacion->moneda); ?>
-                    </span>
+                <!-- Monto total con desglose de comisión PayPal -->
+                <?php
+                $precio_base = floatval($cotizacion->precio_total);
+                $comision_paypal = ($precio_base * 0.044) + 0.30;
+                $precio_total_con_comision = $precio_base + $comision_paypal;
+                ?>
+                <div class="rtt-payment-breakdown">
+                    <div class="rtt-payment-line">
+                        <span class="rtt-payment-label"><?php echo $lang === 'en' ? 'Quotation Amount:' : 'Monto de Cotización:'; ?></span>
+                        <span class="rtt-payment-value">$<?php echo number_format($precio_base, 2); ?> <?php echo esc_html($cotizacion->moneda); ?></span>
+                    </div>
+                    <div class="rtt-payment-line rtt-payment-fee">
+                        <span class="rtt-payment-label"><?php echo $lang === 'en' ? 'PayPal Fee (4.4% + $0.30):' : 'Comisión PayPal (4.4% + $0.30):'; ?></span>
+                        <span class="rtt-payment-value">$<?php echo number_format($comision_paypal, 2); ?> USD</span>
+                    </div>
+                    <div class="rtt-payment-line rtt-payment-total-line">
+                        <span class="rtt-payment-label"><?php echo $lang === 'en' ? 'Total to Pay:' : 'Total a Pagar:'; ?></span>
+                        <span class="rtt-payment-value">$<?php echo number_format($precio_total_con_comision, 2); ?> USD</span>
+                    </div>
                 </div>
 
                 <!-- Hidden fields for JS -->

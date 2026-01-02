@@ -350,6 +350,16 @@ function rtt_paypal_create_order_handler() {
         wp_send_json_error(['message' => __('Error de seguridad', 'rtt-reservas')]);
     }
 
+    // Rate limiting: máximo 1 creación de orden cada 5 segundos por IP
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $rate_key = 'rtt_paypal_create_' . md5($ip);
+
+    if (get_transient($rate_key)) {
+        wp_send_json_error([
+            'message' => __('Por favor espera unos segundos antes de crear otra orden.', 'rtt-reservas')
+        ]);
+    }
+
     if (!RTT_PayPal::is_enabled()) {
         wp_send_json_error(['message' => __('PayPal no está habilitado', 'rtt-reservas')]);
     }
@@ -372,6 +382,9 @@ function rtt_paypal_create_order_handler() {
         wp_send_json_error(['message' => $result->get_error_message()]);
     }
 
+    // Establecer rate limit por 5 segundos después de creación exitosa
+    set_transient($rate_key, true, 5);
+
     wp_send_json_success([
         'order_id' => $result['id'],
         'status' => $result['status'],
@@ -385,6 +398,16 @@ function rtt_paypal_capture_order_handler() {
     // Verificar nonce
     if (!wp_verify_nonce($_POST['nonce'] ?? '', 'rtt_paypal_nonce')) {
         wp_send_json_error(['message' => __('Error de seguridad', 'rtt-reservas')]);
+    }
+
+    // Rate limiting: máximo 1 captura cada 3 segundos por IP
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $rate_key = 'rtt_paypal_capture_' . md5($ip);
+
+    if (get_transient($rate_key)) {
+        wp_send_json_error([
+            'message' => __('Por favor espera unos segundos antes de procesar otro pago.', 'rtt-reservas')
+        ]);
     }
 
     $order_id = sanitize_text_field($_POST['order_id'] ?? '');
@@ -419,6 +442,9 @@ function rtt_paypal_capture_order_handler() {
             // Enviar notificación al vendedor
             do_action('rtt_cotizacion_paid', $cotizacion_id, $payment_data);
         }
+
+        // Establecer rate limit por 3 segundos después de captura exitosa
+        set_transient($rate_key, true, 3);
 
         wp_send_json_success([
             'status' => 'COMPLETED',

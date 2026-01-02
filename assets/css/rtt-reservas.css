@@ -631,24 +631,61 @@
     font-size: 14px;
 }
 
-.rtt-payment-amount {
+.rtt-payment-breakdown {
     background: white;
-    padding: 15px 25px;
+    padding: 20px 30px;
     border-radius: 8px;
     margin-bottom: 20px;
-    display: inline-block;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.rtt-payment-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.rtt-payment-line:last-child {
+    border-bottom: none;
+}
+
+.rtt-payment-fee {
+    color: #666;
+    font-size: 13px;
+}
+
+.rtt-payment-total-line {
+    border-top: 2px solid #0070ba;
+    padding-top: 15px;
+    margin-top: 10px;
+    font-weight: 700;
 }
 
 .rtt-payment-label {
     color: #666;
     font-size: 14px;
-    margin-right: 10px;
+}
+
+.rtt-payment-total-line .rtt-payment-label {
+    color: #0070ba;
+    font-size: 16px;
+    font-weight: 700;
 }
 
 .rtt-payment-value {
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.rtt-payment-total-line .rtt-payment-value {
     color: #0070ba;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
 }
 

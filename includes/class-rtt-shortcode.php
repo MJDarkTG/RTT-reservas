@@ -283,9 +283,19 @@ class RTT_Shortcode {
                             ? 'You can pay now to confirm your reservation immediately, or pay later.'
                             : 'Puedes pagar ahora para confirmar tu reserva inmediatamente, o pagar después.'; ?></p>
                     </div>
-                    <div class="rtt-payment-amount">
-                        <span class="rtt-payment-label"><?php echo $lang === 'en' ? 'Total Amount:' : 'Monto Total:'; ?></span>
-                        <span id="rtt-payment-total" class="rtt-payment-value">$0.00 USD</span>
+                    <div class="rtt-payment-breakdown">
+                        <div class="rtt-payment-line">
+                            <span class="rtt-payment-label"><?php echo $lang === 'en' ? 'Tour Price:' : 'Precio del Tour:'; ?></span>
+                            <span id="rtt-payment-base" class="rtt-payment-value">$0.00 USD</span>
+                        </div>
+                        <div class="rtt-payment-line rtt-payment-fee">
+                            <span class="rtt-payment-label"><?php echo $lang === 'en' ? 'PayPal Fee (4.4% + $0.30):' : 'Comisión PayPal (4.4% + $0.30):'; ?></span>
+                            <span id="rtt-payment-fee" class="rtt-payment-value">$0.00 USD</span>
+                        </div>
+                        <div class="rtt-payment-line rtt-payment-total-line">
+                            <span class="rtt-payment-label"><?php echo $lang === 'en' ? 'Total to Pay:' : 'Total a Pagar:'; ?></span>
+                            <span id="rtt-payment-total" class="rtt-payment-value">$0.00 USD</span>
+                        </div>
                     </div>
                     <div id="paypal-button-container"></div>
                     <p class="rtt-payment-skip">

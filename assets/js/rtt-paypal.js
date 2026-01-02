@@ -94,7 +94,7 @@
          */
         createOrder: function() {
             var self = this;
-            var amount = this.getAmount();
+            var amount = this.getAmountWithFee(); // Total with PayPal fee included
             var description = this.getDescription();
 
             if (!amount || amount <= 0) {
@@ -213,7 +213,7 @@
         },
 
         /**
-         * Get amount to charge
+         * Get base amount (without PayPal fee)
          */
         getAmount: function() {
             var amount = 0;
@@ -238,6 +238,22 @@
             }
 
             return amount;
+        },
+
+        /**
+         * Calculate PayPal fee (4.4% + $0.30 USD)
+         */
+        calculatePayPalFee: function(baseAmount) {
+            return (baseAmount * 0.044) + 0.30;
+        },
+
+        /**
+         * Get total amount including PayPal fee
+         */
+        getAmountWithFee: function() {
+            var baseAmount = this.getAmount();
+            var fee = this.calculatePayPalFee(baseAmount);
+            return baseAmount + fee;
         },
 
         /**
@@ -321,14 +337,21 @@
 
             var $section = $('#rtt-payment-section');
             if ($section.length) {
-                // Calculate and display the amount
-                var amount = this.getAmount();
-                $('#rtt-payment-total').text('$' + amount.toFixed(2) + ' USD');
+                // Calculate amounts
+                var baseAmount = this.getAmount();
 
                 // Only show if amount is valid
-                if (amount <= 0) {
+                if (baseAmount <= 0) {
                     return;
                 }
+
+                var fee = this.calculatePayPalFee(baseAmount);
+                var total = baseAmount + fee;
+
+                // Display breakdown
+                $('#rtt-payment-base').text('$' + baseAmount.toFixed(2) + ' USD');
+                $('#rtt-payment-fee').text('$' + fee.toFixed(2) + ' USD');
+                $('#rtt-payment-total').text('$' + total.toFixed(2) + ' USD');
 
                 $section.show();
 
