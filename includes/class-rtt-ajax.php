@@ -190,7 +190,9 @@ class RTT_Ajax {
                 'telefono' => sanitize_text_field($post_data['telefono']),
                 'pais' => sanitize_text_field($post_data['pais'])
             ],
-            'pasajeros' => []
+            'pasajeros' => [],
+            'payment_completed' => !empty($post_data['payment_completed']) ? true : false,
+            'transaction_id' => sanitize_text_field($post_data['transaction_id'] ?? '')
         ];
 
         // Sanitizar y validar pasajeros

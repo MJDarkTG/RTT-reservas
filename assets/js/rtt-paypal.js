@@ -183,25 +183,31 @@
             // Trigger custom event
             $(document).trigger('rtt_payment_success', [data]);
 
-            // If on reservation form, submit the form
-            if ($('#rtt-reserva-form').length) {
-                // Mark as paid
-                $('<input>').attr({
-                    type: 'hidden',
-                    name: 'payment_completed',
-                    value: '1'
-                }).appendTo('#rtt-reserva-form');
+            // If on reservation form, send confirmation email
+            if ($('#rtt-reserva-form').length && rttPayPal.reservaId) {
+                self.showMessage('Enviando email de confirmación...', 'success');
 
-                $('<input>').attr({
-                    type: 'hidden',
-                    name: 'transaction_id',
-                    value: data.transaction_id
-                }).appendTo('#rtt-reserva-form');
-
-                // Auto-submit after short delay
-                setTimeout(function() {
-                    $('#rtt-reserva-form').submit();
-                }, 1500);
+                // Send confirmation email with payment data
+                $.ajax({
+                    url: rttPayPal.ajaxUrl,
+                    type: 'POST',
+                    data: {
+                        action: 'rtt_paypal_confirm_reservation',
+                        nonce: rttPayPal.nonce,
+                        reserva_id: rttPayPal.reservaId,
+                        transaction_id: data.transaction_id
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            self.showMessage('¡Pago confirmado! Recibirás un email de confirmación.', 'success');
+                        } else {
+                            self.showMessage('Pago exitoso, pero hubo un error al enviar el email de confirmación.', 'warning');
+                        }
+                    },
+                    error: function() {
+                        self.showMessage('Pago exitoso, pero hubo un error al enviar el email de confirmación.', 'warning');
+                    }
+                });
             }
 
             // If on cotizacion payment page, show success and redirect
@@ -209,6 +215,39 @@
                 setTimeout(function() {
                     window.location.reload();
                 }, 2000);
+            }
+
+            // If on reservation payment page, send confirmation email
+            if ($('.rtt-reservation-payment').length) {
+                var reservaId = $('#reserva-id').val();
+                if (reservaId) {
+                    self.showMessage('Enviando email de confirmación...', 'success');
+
+                    // Send confirmation email with payment data
+                    $.ajax({
+                        url: rttPayPal.ajaxUrl,
+                        type: 'POST',
+                        data: {
+                            action: 'rtt_paypal_confirm_reservation',
+                            nonce: rttPayPal.nonce,
+                            reserva_id: reservaId,
+                            transaction_id: data.transaction_id
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                self.showMessage('¡Pago confirmado! Recibirás un email de confirmación. Recargando página...', 'success');
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 3000);
+                            } else {
+                                self.showMessage('Pago exitoso, pero hubo un error al enviar el email de confirmación.', 'warning');
+                            }
+                        },
+                        error: function() {
+                            self.showMessage('Pago exitoso, pero hubo un error al enviar el email de confirmación.', 'warning');
+                        }
+                    });
+                }
             }
         },
 

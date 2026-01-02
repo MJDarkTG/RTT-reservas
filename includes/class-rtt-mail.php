@@ -26,9 +26,18 @@ class RTT_Mail {
         }
 
         $to = $data["representante"]["email"];
-        $subject = $lang === "en"
-            ? ($options["email_subject_en"] ?? "Pre-Booking Received")
-            : ($options["email_subject_es"] ?? "Pre-Reserva Recibida");
+
+        // Asunto según estado de pago
+        $payment_completed = !empty($data['payment_completed']);
+        if ($payment_completed) {
+            $subject = $lang === "en"
+                ? ($options["email_subject_confirmed_en"] ?? "Booking Confirmed")
+                : ($options["email_subject_confirmed_es"] ?? "Reserva Confirmada");
+        } else {
+            $subject = $lang === "en"
+                ? ($options["email_subject_en"] ?? "Pre-Booking Received")
+                : ($options["email_subject_es"] ?? "Pre-Reserva Recibida");
+        }
 
         $message = $this->get_email_template($data, $lang);
 
@@ -75,13 +84,14 @@ class RTT_Mail {
         $count = count($data["pasajeros"]);
         $fecha = date("d/m/Y", strtotime($data["fecha"]));
         $config = $this->get_template_config();
+        $payment_completed = !empty($data['payment_completed']);
 
         return $lang === "en"
-            ? $this->get_english_template($data, $rep, $fecha, $count, $config)
-            : $this->get_spanish_template($data, $rep, $fecha, $count, $config);
+            ? $this->get_english_template($data, $rep, $fecha, $count, $config, $payment_completed)
+            : $this->get_spanish_template($data, $rep, $fecha, $count, $config, $payment_completed);
     }
 
-    private function get_spanish_template($data, $rep, $fecha, $count, $config) {
+    private function get_spanish_template($data, $rep, $fecha, $count, $config, $payment_completed) {
         $precio = !empty($data["precio_tour"]) ? $data["precio_tour"] : '';
 
         $h = '<!DOCTYPE html><html><body style="margin:0;font-family:Arial;background:#f5f5f5;">';
@@ -94,15 +104,28 @@ class RTT_Mail {
         $h .= '<p style="color:#7CB342;margin:15px 0 0;font-style:italic;">' . esc_html($config['slogan_es']) . '</p>';
         $h .= '</td></tr>';
 
-        // Banner
-        $h .= '<tr><td style="background:#7CB342;padding:20px;text-align:center;">';
-        $h .= '<h1 style="color:#fff;margin:0;font-size:24px;">¡Pre - Reserva Recibida!</h1>';
-        $h .= '</td></tr>';
+        // Banner según estado de pago
+        if ($payment_completed) {
+            $h .= '<tr><td style="background:#4CAF50;padding:20px;text-align:center;">';
+            $h .= '<h1 style="color:#fff;margin:0;font-size:24px;">¡Reserva Confirmada!</h1>';
+            $h .= '</td></tr>';
+        } else {
+            $h .= '<tr><td style="background:#7CB342;padding:20px;text-align:center;">';
+            $h .= '<h1 style="color:#fff;margin:0;font-size:24px;">¡Pre - Reserva Recibida!</h1>';
+            $h .= '</td></tr>';
+        }
 
-        // Contenido
+        // Contenido según estado de pago
         $h .= '<tr><td style="padding:30px;">';
         $h .= '<p style="font-size:16px;">Estimado/a <strong style="color:#D4A017;">' . esc_html($rep["nombre"]) . '</strong>,</p>';
-        $h .= '<p>Hemos recibido tu solicitud de reserva. Nuestro equipo la revisará y te contactaremos pronto.</p>';
+        if ($payment_completed) {
+            $h .= '<p>¡Gracias por tu pago! Tu reserva ha sido confirmada exitosamente.</p>';
+            if (!empty($data['transaction_id'])) {
+                $h .= '<p style="background:#E8F5E9;padding:10px;border-radius:5px;">ID de Transacción: <strong>' . esc_html($data['transaction_id']) . '</strong></p>';
+            }
+        } else {
+            $h .= '<p>Hemos recibido tu solicitud de reserva. Nuestro equipo la revisará y te contactaremos pronto.</p>';
+        }
 
         // Detalles del tour
         $h .= '<table style="background:#FFF9E6;border-left:4px solid #D4A017;margin:20px 0;width:100%;"><tr><td style="padding:20px;">';
@@ -140,7 +163,7 @@ class RTT_Mail {
         return $h;
     }
 
-    private function get_english_template($data, $rep, $fecha, $count, $config) {
+    private function get_english_template($data, $rep, $fecha, $count, $config, $payment_completed) {
         $precio = !empty($data["precio_tour"]) ? $data["precio_tour"] : '';
 
         $h = '<!DOCTYPE html><html><body style="margin:0;font-family:Arial;background:#f5f5f5;">';
@@ -153,15 +176,28 @@ class RTT_Mail {
         $h .= '<p style="color:#7CB342;margin:15px 0 0;font-style:italic;">' . esc_html($config['slogan_en']) . '</p>';
         $h .= '</td></tr>';
 
-        // Banner
-        $h .= '<tr><td style="background:#7CB342;padding:20px;text-align:center;">';
-        $h .= '<h1 style="color:#fff;margin:0;font-size:24px;">Pre - Booking Received!</h1>';
-        $h .= '</td></tr>';
+        // Banner según estado de pago
+        if ($payment_completed) {
+            $h .= '<tr><td style="background:#4CAF50;padding:20px;text-align:center;">';
+            $h .= '<h1 style="color:#fff;margin:0;font-size:24px;">Booking Confirmed!</h1>';
+            $h .= '</td></tr>';
+        } else {
+            $h .= '<tr><td style="background:#7CB342;padding:20px;text-align:center;">';
+            $h .= '<h1 style="color:#fff;margin:0;font-size:24px;">Pre - Booking Received!</h1>';
+            $h .= '</td></tr>';
+        }
 
-        // Contenido
+        // Contenido según estado de pago
         $h .= '<tr><td style="padding:30px;">';
         $h .= '<p style="font-size:16px;">Dear <strong style="color:#D4A017;">' . esc_html($rep["nombre"]) . '</strong>,</p>';
-        $h .= '<p>We have received your booking request. Our team will review it and contact you soon.</p>';
+        if ($payment_completed) {
+            $h .= '<p>Thank you for your payment! Your booking has been successfully confirmed.</p>';
+            if (!empty($data['transaction_id'])) {
+                $h .= '<p style="background:#E8F5E9;padding:10px;border-radius:5px;">Transaction ID: <strong>' . esc_html($data['transaction_id']) . '</strong></p>';
+            }
+        } else {
+            $h .= '<p>We have received your booking request. Our team will review it and contact you soon.</p>';
+        }
 
         // Detalles del tour
         $h .= '<table style="background:#FFF9E6;border-left:4px solid #D4A017;margin:20px 0;width:100%;"><tr><td style="padding:20px;">';

@@ -19,6 +19,7 @@ class RTT_Admin_Reservas {
         add_action('wp_ajax_rtt_delete_reserva', [$this, 'ajax_delete_reserva']);
         add_action('wp_ajax_rtt_get_reserva_detail', [$this, 'ajax_get_reserva_detail']);
         add_action('wp_ajax_rtt_get_pasajeros', [$this, 'ajax_get_pasajeros']);
+        add_action('wp_ajax_rtt_send_payment_link_email', [$this, 'ajax_send_payment_link_email']);
         add_action('admin_init', [$this, 'handle_export_csv']);
     }
 
@@ -286,6 +287,20 @@ class RTT_Admin_Reservas {
                                     <a href="#" class="rtt-view-detail" data-id="<?php echo $reserva->id; ?>" title="<?php _e('Ver detalle', 'rtt-reservas'); ?>">
                                         <span class="dashicons dashicons-visibility"></span>
                                     </a>
+                                    <?php
+                                    // Botón de link de pago solo si no está pagada
+                                    $is_paid = !empty($reserva->payment_status) && $reserva->payment_status === 'completed';
+                                    if (!$is_paid):
+                                        $payment_url = RTT_Payment_Reservation_Page::get_payment_url($reserva->codigo, $reserva->lang ?? 'es');
+                                    ?>
+                                    <a href="#" class="rtt-copy-payment-link"
+                                       data-url="<?php echo esc_attr($payment_url); ?>"
+                                       data-email="<?php echo esc_attr($reserva->email); ?>"
+                                       data-id="<?php echo $reserva->id; ?>"
+                                       title="<?php _e('Copiar link de pago', 'rtt-reservas'); ?>">
+                                        <span class="dashicons dashicons-money-alt" style="color: #0073aa;"></span>
+                                    </a>
+                                    <?php endif; ?>
                                     <a href="#" class="rtt-delete-reserva" data-id="<?php echo $reserva->id; ?>" title="<?php _e('Eliminar', 'rtt-reservas'); ?>">
                                         <span class="dashicons dashicons-trash"></span>
                                     </a>
@@ -725,5 +740,122 @@ class RTT_Admin_Reservas {
 
         fclose($output);
         exit;
+    }
+
+    /**
+     * Enviar link de pago por email
+     */
+    public function ajax_send_payment_link_email() {
+        check_ajax_referer('rtt_admin_reservas', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Permisos insuficientes', 'rtt-reservas')]);
+        }
+
+        $reserva_id = intval($_POST['reserva_id'] ?? 0);
+        $payment_url = sanitize_url($_POST['payment_url'] ?? '');
+
+        if (!$reserva_id || !$payment_url) {
+            wp_send_json_error(['message' => __('Datos inválidos', 'rtt-reservas')]);
+        }
+
+        // Obtener datos de la reserva
+        $reserva = RTT_Database::get_reserva($reserva_id);
+
+        if (!$reserva) {
+            wp_send_json_error(['message' => __('Reserva no encontrada', 'rtt-reservas')]);
+        }
+
+        // Enviar email
+        $lang = $reserva->lang ?? 'es';
+        $to = $reserva->email;
+        $subject = $lang === 'en' ? 'Complete Your Reservation Payment' : 'Completa el Pago de tu Reserva';
+
+        $message = $this->get_payment_link_email_template($reserva, $payment_url, $lang);
+
+        $options = get_option('rtt_reservas_options', []);
+        $from_name = $options['from_name'] ?? 'Ready To Travel Peru';
+        $from_email = $options['from_email'] ?? get_option('admin_email');
+
+        $headers = [
+            'Content-Type: text/html; charset=UTF-8',
+            'From: ' . $from_name . ' <' . $from_email . '>'
+        ];
+
+        $sent = wp_mail($to, $subject, $message, $headers);
+
+        if ($sent) {
+            wp_send_json_success(['message' => __('Email enviado exitosamente', 'rtt-reservas')]);
+        } else {
+            wp_send_json_error(['message' => __('Error al enviar email', 'rtt-reservas')]);
+        }
+    }
+
+    /**
+     * Plantilla de email para link de pago
+     */
+    private function get_payment_link_email_template($reserva, $payment_url, $lang) {
+        $options = get_option('rtt_reservas_options', []);
+        $logo_url = $options['logo_url'] ?? '';
+
+        $html = '<!DOCTYPE html><html><body style="margin:0;font-family:Arial;background:#f5f5f5;">';
+        $html .= '<table width="100%" style="background:#f5f5f5;padding:20px;"><tr><td align="center">';
+        $html .= '<table width="600" style="background:#fff;border-radius:12px;overflow:hidden;">';
+
+        // Header
+        $html .= '<tr><td style="background:#fff;padding:25px;text-align:center;border-bottom:4px solid #D4A017;">';
+        if ($logo_url) {
+            $html .= '<img src="' . esc_url($logo_url) . '" style="max-width:250px;">';
+        }
+        $html .= '</td></tr>';
+
+        // Banner
+        $html .= '<tr><td style="background:#0073aa;padding:20px;text-align:center;">';
+        $html .= '<h1 style="color:#fff;margin:0;font-size:24px;">';
+        $html .= $lang === 'en' ? 'Complete Your Payment' : 'Completa tu Pago';
+        $html .= '</h1></td></tr>';
+
+        // Contenido
+        $html .= '<tr><td style="padding:30px;">';
+        $html .= '<p style="font-size:16px;">';
+        $html .= $lang === 'en'
+            ? 'Dear <strong>' . esc_html($reserva->nombre_representante) . '</strong>,'
+            : 'Estimado/a <strong>' . esc_html($reserva->nombre_representante) . '</strong>,';
+        $html .= '</p>';
+        $html .= '<p>';
+        $html .= $lang === 'en'
+            ? 'We are waiting for your payment to confirm your reservation. Click the button below to complete the payment securely with PayPal.'
+            : 'Estamos esperando tu pago para confirmar tu reserva. Haz clic en el botón a continuación para completar el pago de forma segura con PayPal.';
+        $html .= '</p>';
+
+        // Detalles de reserva
+        $html .= '<table style="background:#FFF9E6;border-left:4px solid #D4A017;margin:20px 0;width:100%;"><tr><td style="padding:20px;">';
+        $html .= '<p style="margin:5px 0;"><strong>' . ($lang === 'en' ? 'Reservation:' : 'Reserva:') . '</strong> ' . esc_html($reserva->codigo) . '</p>';
+        $html .= '<p style="margin:5px 0;"><strong>' . ($lang === 'en' ? 'Tour:' : 'Tour:') . '</strong> ' . esc_html($reserva->tour) . '</p>';
+        $html .= '<p style="margin:5px 0;"><strong>' . ($lang === 'en' ? 'Date:' : 'Fecha:') . '</strong> ' . date('d/m/Y', strtotime($reserva->fecha)) . '</p>';
+        $html .= '</td></tr></table>';
+
+        // Botón de pago
+        $html .= '<div style="text-align:center;margin:30px 0;">';
+        $html .= '<a href="' . esc_url($payment_url) . '" style="display:inline-block;background:#0073aa;color:#fff;padding:15px 40px;text-decoration:none;border-radius:5px;font-size:18px;font-weight:bold;">';
+        $html .= $lang === 'en' ? 'Complete Payment' : 'Completar Pago';
+        $html .= '</a></div>';
+
+        // Link alternativo
+        $html .= '<p style="font-size:12px;color:#666;text-align:center;">';
+        $html .= $lang === 'en' ? "If the button doesn't work, copy this link:" : 'Si el botón no funciona, copia este link:';
+        $html .= '<br><a href="' . esc_url($payment_url) . '">' . esc_html($payment_url) . '</a></p>';
+
+        $html .= '</td></tr>';
+
+        // Footer
+        $html .= '<tr><td style="background:#f9f9f9;padding:25px;text-align:center;border-top:4px solid #D4A017;">';
+        $html .= '<p style="color:#666;margin:0;font-size:14px;">' . esc_html($options['from_name'] ?? 'Ready To Travel Peru') . '</p>';
+        $html .= '<p style="color:#666;margin:5px 0;font-size:14px;">' . esc_html($options['contact_email'] ?? '') . '</p>';
+        $html .= '</td></tr>';
+
+        $html .= '</table></td></tr></table></body></html>';
+
+        return $html;
     }
 }

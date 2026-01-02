@@ -102,6 +102,7 @@ final class RTT_Reservas {
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-whatsapp.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-paypal.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-payment-page.php';
+        require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-payment-reservation-page.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-cotizacion-pdf.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-seller-panel.php';
         require_once RTT_RESERVAS_PLUGIN_DIR . 'includes/class-rtt-manual.php';
@@ -168,6 +169,10 @@ final class RTT_Reservas {
         // Registrar página de pago de cotizaciones
         $payment_page = new RTT_Payment_Page();
         $payment_page->init();
+
+        // Registrar página de pago de reservas
+        $payment_reservation_page = new RTT_Payment_Reservation_Page();
+        $payment_reservation_page->init();
 
         // Registrar assets
         add_action('wp_enqueue_scripts', [$this, 'enqueue_public_assets']);

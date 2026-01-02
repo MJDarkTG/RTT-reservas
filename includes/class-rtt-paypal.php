@@ -456,6 +456,87 @@ function rtt_paypal_capture_order_handler() {
     wp_send_json_error(['message' => __('El pago no pudo ser completado', 'rtt-reservas')]);
 }
 
+// Confirm reservation after payment
+add_action('wp_ajax_rtt_paypal_confirm_reservation', 'rtt_paypal_confirm_reservation_handler');
+add_action('wp_ajax_nopriv_rtt_paypal_confirm_reservation', 'rtt_paypal_confirm_reservation_handler');
+
+function rtt_paypal_confirm_reservation_handler() {
+    // Verificar nonce
+    if (!wp_verify_nonce($_POST['nonce'] ?? '', 'rtt_paypal_nonce')) {
+        wp_send_json_error(['message' => __('Error de seguridad', 'rtt-reservas')]);
+    }
+
+    $reserva_id = intval($_POST['reserva_id'] ?? 0);
+    $transaction_id = sanitize_text_field($_POST['transaction_id'] ?? '');
+
+    if (empty($reserva_id)) {
+        wp_send_json_error(['message' => __('ID de reserva requerido', 'rtt-reservas')]);
+    }
+
+    // Obtener datos de la reserva desde la BD
+    $reserva = RTT_Database::get_reserva($reserva_id);
+
+    if (!$reserva) {
+        wp_send_json_error(['message' => __('Reserva no encontrada', 'rtt-reservas')]);
+    }
+
+    // Obtener pasajeros
+    $pasajeros_obj = RTT_Database::get_pasajeros($reserva_id);
+
+    // Convertir objetos de pasajeros a arrays
+    $pasajeros = [];
+    foreach ($pasajeros_obj as $pasajero) {
+        $pasajeros[] = [
+            'tipo_doc' => $pasajero->tipo_doc,
+            'nro_doc' => $pasajero->nro_doc,
+            'nombre' => $pasajero->nombre,
+            'genero' => $pasajero->genero,
+            'fecha_nacimiento' => $pasajero->fecha_nacimiento ?? '',
+            'nacionalidad' => $pasajero->nacionalidad ?? '',
+            'alergias' => $pasajero->alergias ?? '',
+        ];
+    }
+
+    // Preparar datos para el PDF y email
+    $data = [
+        'lang' => $reserva->lang ?? 'es',
+        'tour' => $reserva->tour,
+        'fecha' => $reserva->fecha,
+        'precio_tour' => $reserva->precio ?? '',
+        'representante' => [
+            'nombre' => $reserva->nombre_representante,
+            'email' => $reserva->email,
+            'telefono' => $reserva->telefono,
+            'pais' => $reserva->pais,
+        ],
+        'pasajeros' => $pasajeros,
+        'codigo' => $reserva->codigo,
+        'reserva_id' => $reserva_id,
+        'payment_completed' => true,
+        'transaction_id' => $transaction_id,
+    ];
+
+    // Generar PDF con estado de pago confirmado
+    $pdf_generator = new RTT_PDF();
+    $pdf_content = $pdf_generator->generate($data);
+
+    if (is_wp_error($pdf_content)) {
+        wp_send_json_error(['message' => __('Error al generar PDF', 'rtt-reservas')]);
+    }
+
+    // Enviar email de confirmación
+    $mailer = new RTT_Mail();
+    $email_sent = $mailer->send_confirmation($data, $pdf_content);
+
+    if (is_wp_error($email_sent)) {
+        wp_send_json_error(['message' => __('Error al enviar email de confirmación', 'rtt-reservas')]);
+    }
+
+    wp_send_json_success([
+        'message' => __('Email de confirmación enviado exitosamente', 'rtt-reservas')
+    ]);
+}
+
 // Test connection AJAX
 add_action('wp_ajax_rtt_test_paypal', function() {
     if (!wp_verify_nonce($_POST['nonce'] ?? '', 'rtt_test_paypal')) {

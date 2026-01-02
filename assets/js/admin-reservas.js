@@ -12,6 +12,7 @@
         initModal();
         initExportToggle();
         initLazyLoadPasajeros();
+        initCopyPaymentLink();
     });
 
     /**
@@ -221,6 +222,74 @@
             }).fail(function() {
                 $btn.prop('disabled', false).text('Error - Reintentar');
             });
+        });
+    }
+
+    /**
+     * Copiar link de pago
+     */
+    function initCopyPaymentLink() {
+        $('.rtt-copy-payment-link').on('click', function(e) {
+            e.preventDefault();
+
+            var $link = $(this);
+            var url = $link.data('url');
+            var email = $link.data('email');
+            var id = $link.data('id');
+
+            // Copiar al portapapeles
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(url).then(function() {
+                    showNotice('Link de pago copiado al portapapeles', 'success');
+
+                    // Preguntar si quiere enviar por email
+                    if (confirm('¿Deseas enviar el link de pago por email a ' + email + '?')) {
+                        sendPaymentLinkByEmail(id, url, email);
+                    }
+                }).catch(function() {
+                    fallbackCopyToClipboard(url);
+                });
+            } else {
+                fallbackCopyToClipboard(url);
+            }
+        });
+    }
+
+    /**
+     * Fallback para copiar al portapapeles (navegadores antiguos)
+     */
+    function fallbackCopyToClipboard(text) {
+        var $temp = $('<textarea>');
+        $('body').append($temp);
+        $temp.val(text).select();
+        try {
+            document.execCommand('copy');
+            showNotice('Link de pago copiado al portapapeles', 'success');
+        } catch (err) {
+            showNotice('No se pudo copiar. Link: ' + text, 'error');
+        }
+        $temp.remove();
+    }
+
+    /**
+     * Enviar link de pago por email
+     */
+    function sendPaymentLinkByEmail(id, url, email) {
+        showNotice('Enviando email...', 'info');
+
+        $.post(rttAdminReservas.ajaxUrl, {
+            action: 'rtt_send_payment_link_email',
+            nonce: rttAdminReservas.nonce,
+            reserva_id: id,
+            payment_url: url
+        }, function(response) {
+            if (response.success) {
+                showNotice('Email enviado exitosamente a ' + email, 'success');
+            } else {
+                showNotice(response.data.message || 'Error al enviar email', 'error');
+            }
+        }).fail(function() {
+            showNotice('Error al enviar email', 'error');
         });
     }
 

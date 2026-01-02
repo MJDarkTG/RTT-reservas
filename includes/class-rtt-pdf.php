@@ -197,7 +197,7 @@
               $pdf->SetMargins(15, 15, 15);
               $pdf->SetAutoPageBreak(true, 40);
 
-              $this->add_title($pdf, $lang);
+              $this->add_title($pdf, $data, $lang);
               $this->add_tour_info($pdf, $data, $lang);
               $this->add_representative_info($pdf, $data, $lang);
               $this->add_passengers_table($pdf, $data, $lang);
@@ -210,10 +210,20 @@
           }
       }
 
-      private function add_title($pdf, $lang) {
+      private function add_title($pdf, $data, $lang) {
+          $payment_completed = !empty($data['payment_completed']);
+          $transaction_id = $data['transaction_id'] ?? '';
+
           $pdf->SetFont('Helvetica', 'B', 16);
-          $pdf->SetTextColor(212, 160, 23);
-          $title = $lang === 'en' ? 'PRE-BOOKING REGISTERED SUCCESSFULLY' : 'PRE-RESERVA REGISTRADA CON EXITO';
+
+          // Título y color según estado de pago
+          if ($payment_completed) {
+              $pdf->SetTextColor(76, 175, 80); // Verde para confirmada
+              $title = $lang === 'en' ? 'BOOKING CONFIRMED' : 'RESERVA CONFIRMADA';
+          } else {
+              $pdf->SetTextColor(212, 160, 23); // Naranja para pre-reserva
+              $title = $lang === 'en' ? 'PRE-BOOKING REGISTERED SUCCESSFULLY' : 'PRE-RESERVA REGISTRADA CON EXITO';
+          }
           $pdf->Cell(0, 10, rtt_utf8_to_iso($title), 0, 1, 'C');
 
           $pdf->SetFont('Helvetica', '', 10);
@@ -229,13 +239,24 @@
           $now = new DateTime('now', $peru_tz);
           $pdf->Cell(0, 5, $date_text . $now->format('d/m/Y H:i'), 0, 1, 'C');
 
-          // Nota de confirmación pendiente de pago
+          // Nota según estado de pago
           $pdf->Ln(3);
           $pdf->SetFont('Helvetica', 'I', 9);
-          $pdf->SetTextColor(180, 80, 80);
-          $note = $lang === 'en'
-              ? '* Your booking will be confirmed upon receipt and validation of payment.'
-              : '* La reserva quedara confirmada tras la recepcion y validacion del pago correspondiente.';
+
+          if ($payment_completed) {
+              $pdf->SetTextColor(76, 175, 80); // Verde
+              $note = $lang === 'en'
+                  ? '* Payment received. Your booking is confirmed.'
+                  : '* Pago recibido. Su reserva esta confirmada.';
+              if (!empty($transaction_id)) {
+                  $note .= ' ID: ' . $transaction_id;
+              }
+          } else {
+              $pdf->SetTextColor(180, 80, 80); // Rojo
+              $note = $lang === 'en'
+                  ? '* Your booking will be confirmed upon receipt and validation of payment.'
+                  : '* La reserva quedara confirmada tras la recepcion y validacion del pago correspondiente.';
+          }
           $pdf->Cell(0, 5, rtt_utf8_to_iso($note), 0, 1, 'C');
 
           $pdf->Ln(5);
