@@ -255,6 +255,191 @@
     color: #555;
 }
 
+/* ========================================
+   RESERVATION PAYMENT PAGE STYLES
+   ======================================== */
+
+/* Container for reservation payment */
+.rtt-reservation-payment {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding: 40px 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.rtt-payment-container {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* Header */
+.rtt-payment-header {
+    background: linear-gradient(135deg, var(--rtt-primary), var(--rtt-primary-dark));
+    color: white;
+    padding: 40px 30px;
+    border-radius: 16px 16px 0 0;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.rtt-payment-header h1 {
+    margin: 0 0 10px;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.rtt-payment-subtitle {
+    margin: 0;
+    font-size: 15px;
+    opacity: 0.95;
+    font-weight: 400;
+}
+
+/* Reservation Details */
+.rtt-reservation-details {
+    background: white;
+    padding: 30px;
+    border-bottom: 2px solid #f0f0f0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.rtt-reservation-details h3 {
+    margin: 0 0 20px;
+    font-size: 18px;
+    color: #333;
+    border-bottom: 2px solid var(--rtt-primary);
+    padding-bottom: 10px;
+}
+
+/* Payment Breakdown */
+.rtt-payment-breakdown {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 2px solid #f0f0f0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.rtt-payment-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px dashed #e0e0e0;
+    font-size: 15px;
+}
+
+.rtt-payment-line:last-child {
+    border-bottom: none;
+}
+
+.rtt-payment-label {
+    color: #555;
+    font-weight: 500;
+}
+
+.rtt-payment-value {
+    font-weight: 600;
+    color: #333;
+    text-align: right;
+}
+
+.rtt-payment-fee {
+    background: #fff8e1;
+    margin: 0 -15px;
+    padding: 12px 15px;
+    border-radius: 6px;
+    border: 1px dashed #ffc107;
+}
+
+.rtt-payment-fee .rtt-payment-label {
+    color: #f57f17;
+}
+
+.rtt-payment-fee .rtt-payment-value {
+    color: #f57f17;
+}
+
+.rtt-payment-total-line {
+    background: #e8f5e9;
+    margin: 15px -15px 0;
+    padding: 18px 15px !important;
+    border-radius: 8px;
+    border: 2px solid var(--rtt-paypal);
+    border-bottom: 2px solid var(--rtt-paypal) !important;
+}
+
+.rtt-payment-total-line .rtt-payment-label {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--rtt-paypal);
+}
+
+.rtt-payment-total-line .rtt-payment-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--rtt-paypal);
+}
+
+/* Payment Method Section (reuse from cotizacion) */
+.rtt-reservation-payment .rtt-payment-method {
+    background: white;
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Error and Success States for reservations */
+.rtt-reservation-payment .rtt-payment-error,
+.rtt-reservation-payment .rtt-payment-success-message {
+    max-width: 600px;
+    margin: 60px auto;
+    text-align: center;
+    padding: 50px 40px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+}
+
+.rtt-payment-success-message .success-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--rtt-success);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+    margin: 0 auto 20px;
+    line-height: 1;
+}
+
+.rtt-payment-success-message h2 {
+    color: var(--rtt-success);
+    margin: 0 0 15px;
+    font-size: 24px;
+}
+
+.rtt-payment-success-message p {
+    color: #666;
+    font-size: 16px;
+    margin: 0 0 25px;
+    line-height: 1.6;
+}
+
+.rtt-payment-success-message .reservation-code {
+    background: #f8f9fa;
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-size: 16px;
+    color: #333;
+    border-left: 4px solid var(--rtt-success);
+}
+
+.rtt-payment-success-message .reservation-code strong {
+    color: var(--rtt-success);
+    font-weight: 700;
+}
+
 /* Responsive */
 @media (max-width: 576px) {
     .rtt-cotizacion-payment {
@@ -288,5 +473,28 @@
 
     .rtt-detail-value {
         text-align: left;
+    }
+
+    /* Reservation payment responsive */
+    .rtt-reservation-payment {
+        padding: 20px 15px;
+    }
+
+    .rtt-payment-header {
+        padding: 30px 20px;
+    }
+
+    .rtt-payment-header h1 {
+        font-size: 22px;
+    }
+
+    .rtt-reservation-details,
+    .rtt-payment-breakdown,
+    .rtt-payment-method {
+        padding: 20px;
+    }
+
+    .rtt-payment-total-line .rtt-payment-value {
+        font-size: 20px;
     }
 }
