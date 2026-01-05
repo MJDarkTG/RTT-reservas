@@ -23,7 +23,6 @@ class RTT_Payment_Reservation_Page {
     public function init() {
         add_action('init', [$this, 'add_rewrite_rules']);
         add_action('template_redirect', [$this, 'handle_payment_page']);
-        add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
     }
 
     /**
@@ -50,37 +49,30 @@ class RTT_Payment_Reservation_Page {
     }
 
     /**
-     * Encolar assets
+     * Cargar assets (CSS y JS)
      */
-    public function enqueue_assets() {
-        if (get_query_var('rtt_payment_reservation')) {
-            // CSS
-            wp_enqueue_style(
-                'rtt-payment-reservation-css',
-                RTT_RESERVAS_PLUGIN_URL . 'assets/css/payment-page.css',
-                [],
-                RTT_RESERVAS_VERSION
-            );
+    private function load_assets() {
+        // CSS
+        echo '<link rel="stylesheet" href="' . RTT_RESERVAS_PLUGIN_URL . 'assets/css/payment-page.css?v=' . RTT_RESERVAS_VERSION . '">';
 
-            // PayPal JS si está habilitado
-            if (class_exists('RTT_PayPal') && RTT_PayPal::is_enabled()) {
-                wp_enqueue_script(
-                    'rtt-paypal-js',
-                    RTT_RESERVAS_PLUGIN_URL . 'assets/js/rtt-paypal.js',
-                    ['jquery'],
-                    RTT_RESERVAS_VERSION,
-                    true
-                );
+        // jQuery desde WordPress
+        echo '<script src="' . includes_url('js/jquery/jquery.min.js') . '"></script>';
 
-                $paypal_config = RTT_PayPal::get_config();
-                wp_localize_script('rtt-paypal-js', 'rttPayPal', [
-                    'enabled' => true,
-                    'clientId' => $paypal_config['client_id'],
-                    'sandbox' => $paypal_config['sandbox'],
-                    'ajaxUrl' => admin_url('admin-ajax.php'),
-                    'nonce' => wp_create_nonce('rtt_paypal_nonce'),
-                ]);
-            }
+        // PayPal JS si está habilitado
+        if (class_exists('RTT_PayPal') && RTT_PayPal::is_enabled()) {
+            $paypal_config = RTT_PayPal::get_config();
+            ?>
+            <script>
+            var rttPayPal = {
+                enabled: true,
+                clientId: '<?php echo esc_js($paypal_config['client_id']); ?>',
+                sandbox: <?php echo $paypal_config['sandbox'] ? 'true' : 'false'; ?>,
+                ajaxUrl: '<?php echo admin_url('admin-ajax.php'); ?>',
+                nonce: '<?php echo wp_create_nonce('rtt_paypal_nonce'); ?>'
+            };
+            </script>
+            <script src="<?php echo RTT_RESERVAS_PLUGIN_URL; ?>assets/js/rtt-paypal.js?v=<?php echo RTT_RESERVAS_VERSION; ?>"></script>
+            <?php
         }
     }
 
@@ -132,7 +124,7 @@ class RTT_Payment_Reservation_Page {
             <meta charset="<?php bloginfo('charset'); ?>">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <title><?php echo esc_html($message); ?></title>
-            <?php wp_head(); ?>
+            <?php $this->load_assets(); ?>
         </head>
         <body class="rtt-payment-page">
             <div class="rtt-payment-container">
@@ -140,7 +132,6 @@ class RTT_Payment_Reservation_Page {
                     <h2><?php echo esc_html($message); ?></h2>
                 </div>
             </div>
-            <?php wp_footer(); ?>
         </body>
         </html>
         <?php
@@ -157,7 +148,7 @@ class RTT_Payment_Reservation_Page {
             <meta charset="<?php bloginfo('charset'); ?>">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <title><?php echo $lang === 'en' ? 'Payment Completed' : 'Pago Completado'; ?></title>
-            <?php wp_head(); ?>
+            <?php $this->load_assets(); ?>
         </head>
         <body class="rtt-payment-page">
             <div class="rtt-payment-container">
@@ -203,7 +194,7 @@ class RTT_Payment_Reservation_Page {
             <meta charset="<?php bloginfo('charset'); ?>">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <title><?php echo $lang === 'en' ? 'Pay Reservation' : 'Pagar Reserva'; ?></title>
-            <?php wp_head(); ?>
+            <?php $this->load_assets(); ?>
         </head>
         <body class="rtt-payment-page rtt-reservation-payment">
             <div class="rtt-payment-container">
