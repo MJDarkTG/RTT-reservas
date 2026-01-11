@@ -366,6 +366,13 @@
      */
     function closeModal() {
         var $modal = $('#rtt-booking-modal');
+
+        // Cerrar calendario si está abierto
+        var fechaInput = document.getElementById('rtt-fecha');
+        if (fechaInput && fechaInput._mcdp && typeof fechaInput._mcdp.close === 'function') {
+            fechaInput._mcdp.close();
+        }
+
         $('body').removeClass('rtt-modal-open');
         $modal.removeClass('rtt-modal-active').hide();
     }
