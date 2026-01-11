@@ -427,6 +427,18 @@
         if (typeof rttPayPal !== 'undefined' && rttPayPal.enabled) {
             RTTPayPal.init();
         }
+
+        // Handle "Skip payment" button
+        $(document).on('click', '#rtt-skip-payment', function(e) {
+            e.preventDefault();
+
+            // Submit the form without payment data
+            var $form = $('#rtt-reserva-form');
+            if ($form.length) {
+                // Trigger form submission (will be handled by the normal submit handler)
+                $form.trigger('submit');
+            }
+        });
     });
 
     // Expose to global scope
