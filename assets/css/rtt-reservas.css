@@ -1343,31 +1343,40 @@ template {
     color: #27AE60 !important;
 }
 
-/* Días del mes - números más visibles */
+/* Días del mes - números más visibles y centrados */
 .mc-date {
-    color: #2c3e50 !important;
+    color: #1a1a1a !important;
     font-weight: 600 !important;
-    font-size: 14px !important;
+    font-size: 15px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
-.mc-date:hover:not(.mc-date--disabled):not(.mc-date--selected) {
+/* Fechas disponibles/activas - negras y negritas */
+.mc-date--active {
+    color: #1a1a1a !important;
+    background: white !important;
+}
+
+.mc-date--active:hover {
     background: rgba(39, 174, 96, 0.15) !important;
     color: #004070 !important;
 }
 
-/* Días deshabilitados/bloqueados - MUY claros y con tachado */
-.mc-date--disabled {
-    opacity: 0.25 !important;
-    color: #d0d0d0 !important;
+/* Fechas bloqueadas/inactivas - fondo rojo claro y tachadas */
+.mc-date--inactive {
+    background: #ffe6e6 !important;
+    color: #999 !important;
     text-decoration: line-through !important;
     cursor: not-allowed !important;
-    background: #f8f9fa !important;
+    opacity: 0.6 !important;
 }
 
-/* Días de otros meses (fuera del mes actual) */
-.mc-date--other-month {
-    opacity: 0.2 !important;
-    color: #e0e0e0 !important;
+/* Prevenir hover en fechas inactivas */
+.mc-date--inactive:hover {
+    background: #ffe6e6 !important;
+    color: #999 !important;
 }
 
 /* Encabezados de días de la semana (Do, Lu, Ma, etc.) */
