@@ -432,12 +432,11 @@
         $(document).on('click', '#rtt-skip-payment', function(e) {
             e.preventDefault();
 
-            // Submit the form without payment data
-            var $form = $('#rtt-reserva-form');
-            if ($form.length) {
-                // Trigger form submission (will be handled by the normal submit handler)
-                $form.trigger('submit');
-            }
+            // Simply hide the payment section to show the pre-booking success screen
+            $('#rtt-payment-section').slideUp(300);
+
+            // Opcional: Mostrar un mensaje confirmando que se omitió el pago
+            // (la pantalla de éxito de PRE-RESERVA ya está visible debajo)
         });
     });
 
