@@ -1343,14 +1343,35 @@ template {
     color: #27AE60 !important;
 }
 
-/* Días del mes */
-.mc-date:hover:not(.mc-date--disabled):not(.mc-date--selected) {
-    background: rgba(39, 174, 96, 0.15) !important;
+/* Días del mes - números más visibles */
+.mc-date {
+    color: #2c3e50 !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
 }
 
-/* Días deshabilitados */
+.mc-date:hover:not(.mc-date--disabled):not(.mc-date--selected) {
+    background: rgba(39, 174, 96, 0.15) !important;
+    color: #004070 !important;
+}
+
+/* Días deshabilitados - más claros pero aún visibles */
 .mc-date--disabled {
-    opacity: 0.35 !important;
+    opacity: 0.4 !important;
+    color: #95a5a6 !important;
+}
+
+/* Días de otros meses (fuera del mes actual) */
+.mc-date--other-month {
+    opacity: 0.3 !important;
+    color: #bdc3c7 !important;
+}
+
+/* Encabezados de días de la semana (Do, Lu, Ma, etc.) */
+.mc-table__weekday {
+    color: #27AE60 !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
 }
 
 /* Botones OK/Clear/Cancel */
