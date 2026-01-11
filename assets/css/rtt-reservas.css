@@ -695,17 +695,28 @@
 }
 
 .rtt-payment-skip {
-    margin: 15px 0 0;
+    margin: 20px 0 0;
+    text-align: center;
 }
 
 .rtt-payment-skip a {
-    color: #999;
-    font-size: 13px;
-    text-decoration: underline;
+    display: inline-block;
+    padding: 12px 24px;
+    color: #0070ba;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 2px solid #0070ba;
+    border-radius: 8px;
+    background: white;
+    transition: all 0.3s ease;
 }
 
 .rtt-payment-skip a:hover {
-    color: #666;
+    background: #0070ba;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 112, 186, 0.3);
 }
 
 /* Success screen after submission */
