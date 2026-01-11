@@ -111,12 +111,16 @@
      * Se ejecuta cada 10 minutos (600,000 ms)
      */
     function startNonceRefresh() {
-        // Refrescar cada 10 minutos (10 * 60 * 1000 = 600000 ms)
-        setInterval(refreshNonce, 600000);
+        // TEMPORAL: Refrescar cada 10 segundos para pruebas (cambiar a 600000 en producción)
+        // Producción: 10 minutos = 600000 ms
+        // Pruebas: 10 segundos = 10000 ms
+        var refreshInterval = 10000; // CAMBIAR A 600000 DESPUÉS DE PROBAR
+
+        setInterval(refreshNonce, refreshInterval);
 
         // Log de inicio
         if (window.console && console.log) {
-            console.log('RTT: Nonce auto-refresh started (every 10 minutes)');
+            console.log('RTT: Nonce auto-refresh started (every ' + (refreshInterval/1000) + ' seconds)');
         }
     }
 
