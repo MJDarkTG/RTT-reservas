@@ -924,19 +924,33 @@
                 if (response.success && response.data.nonce) {
                     var nonceNuevo = response.data.nonce;
                     var timestamp = new Date(response.data.timestamp * 1000);
+                    var isValid = response.data.is_valid;
+                    var tick = response.data.tick;
 
                     // Actualizar campo
                     $('input[name="rtt_nonce"]').val(nonceNuevo);
 
+                    // Determinar si los nonces son iguales (es NORMAL en WordPress)
+                    var sameNonce = (nonceAntes === nonceNuevo);
+
                     // Mostrar resultado
                     var html = '<div style="background: white; padding: 10px; border-radius: 5px; text-align: left;">';
-                    html += '<div style="color: #28a745; margin-bottom: 5px;">✅ <strong>Nonce regenerado exitosamente</strong></div>';
-                    html += '<div style="margin: 5px 0; padding: 5px; background: #f8f8f8;">Antes: <span style="color: #999;">' + nonceAntes.substring(0, 20) + '...</span></div>';
-                    html += '<div style="margin: 5px 0; padding: 5px; background: #e8f5e9;">Ahora: <span style="color: #28a745; font-weight: bold;">' + nonceNuevo.substring(0, 20) + '...</span></div>';
-                    html += '<div style="margin: 5px 0; color: #666;">Hora: ' + timestamp.toLocaleTimeString() + '</div>';
-                    html += '<div style="margin: 5px 0; color: ' + (nonceAntes !== nonceNuevo ? '#28a745' : '#dc3545') + ';">';
-                    html += nonceAntes !== nonceNuevo ? '✅ Nonces diferentes (correcto)' : '❌ Nonces iguales (error)';
-                    html += '</div></div>';
+                    html += '<div style="color: #28a745; margin-bottom: 5px;">✅ <strong>Sistema funcionando correctamente</strong></div>';
+                    html += '<div style="margin: 5px 0; padding: 5px; background: #f8f8f8;">Nonce: <span style="color: #666; font-family: monospace;">' + nonceNuevo.substring(0, 25) + '...</span></div>';
+                    html += '<div style="margin: 5px 0; color: #666;">⏰ Hora: ' + timestamp.toLocaleTimeString() + '</div>';
+                    html += '<div style="margin: 5px 0; color: ' + (isValid ? '#28a745' : '#dc3545') + ';">🔒 Válido: ' + (isValid ? '✅ SÍ' : '❌ NO') + '</div>';
+                    html += '<div style="margin: 5px 0; color: #666;">🔢 WordPress Tick: ' + tick + '</div>';
+
+                    if (sameNonce) {
+                        html += '<div style="margin: 10px 0; padding: 8px; background: #fff3cd; border-left: 3px solid #ffc107; font-size: 11px;">';
+                        html += '<strong>ℹ️ Nota:</strong> Los nonces son iguales porque WordPress usa el mismo nonce dentro del mismo período (12h). ';
+                        html += 'Esto es <strong>correcto</strong> y evita que expire.';
+                        html += '</div>';
+                    } else {
+                        html += '<div style="margin: 5px 0; color: #28a745;">✅ Nonce cambió (tick diferente)</div>';
+                    }
+
+                    html += '</div>';
 
                     $result.html(html);
                 } else {
