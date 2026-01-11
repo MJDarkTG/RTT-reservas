@@ -1355,16 +1355,19 @@ template {
     color: #004070 !important;
 }
 
-/* Días deshabilitados - más claros pero aún visibles */
+/* Días deshabilitados/bloqueados - MUY claros y con tachado */
 .mc-date--disabled {
-    opacity: 0.4 !important;
-    color: #95a5a6 !important;
+    opacity: 0.25 !important;
+    color: #d0d0d0 !important;
+    text-decoration: line-through !important;
+    cursor: not-allowed !important;
+    background: #f8f9fa !important;
 }
 
 /* Días de otros meses (fuera del mes actual) */
 .mc-date--other-month {
-    opacity: 0.3 !important;
-    color: #bdc3c7 !important;
+    opacity: 0.2 !important;
+    color: #e0e0e0 !important;
 }
 
 /* Encabezados de días de la semana (Do, Lu, Ma, etc.) */
