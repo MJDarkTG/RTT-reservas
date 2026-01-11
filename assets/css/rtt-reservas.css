@@ -1362,19 +1362,22 @@ template {
     color: #004070 !important;
 }
 
-/* Fechas bloqueadas/inactivas - fondo rojo claro y tachadas */
+/* Fechas bloqueadas/inactivas - tachadas como en la imagen */
 .mc-date--inactive {
-    background: #ffe6e6 !important;
-    color: #999 !important;
+    background: transparent !important;
+    color: #bbb !important;
     text-decoration: line-through !important;
+    text-decoration-thickness: 2px !important;
+    text-decoration-color: #999 !important;
     cursor: not-allowed !important;
-    opacity: 0.6 !important;
+    opacity: 0.7 !important;
+    font-weight: 400 !important;
 }
 
 /* Prevenir hover en fechas inactivas */
 .mc-date--inactive:hover {
-    background: #ffe6e6 !important;
-    color: #999 !important;
+    background: transparent !important;
+    color: #bbb !important;
 }
 
 /* Encabezados de días de la semana (Do, Lu, Ma, etc.) */
