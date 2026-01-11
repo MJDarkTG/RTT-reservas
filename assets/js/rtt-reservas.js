@@ -899,4 +899,57 @@
         });
     }
 
+    /**
+     * TEMPORAL: Prueba de nonce - ELIMINAR EN PRODUCCIÓN
+     */
+    $(document).on('click', '#rtt-test-nonce', function() {
+        var $button = $(this);
+        var $result = $('#rtt-nonce-test-result');
+
+        $button.prop('disabled', true).text('Probando...');
+
+        // Obtener nonce actual
+        var nonceAntes = $('input[name="rtt_nonce"]').val();
+
+        $result.html('<div style="color: #666;">⏳ Solicitando nuevo nonce...</div>');
+
+        // Solicitar nuevo nonce
+        $.ajax({
+            url: rttReservas.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'rtt_refresh_nonce'
+            },
+            success: function(response) {
+                if (response.success && response.data.nonce) {
+                    var nonceNuevo = response.data.nonce;
+                    var timestamp = new Date(response.data.timestamp * 1000);
+
+                    // Actualizar campo
+                    $('input[name="rtt_nonce"]').val(nonceNuevo);
+
+                    // Mostrar resultado
+                    var html = '<div style="background: white; padding: 10px; border-radius: 5px; text-align: left;">';
+                    html += '<div style="color: #28a745; margin-bottom: 5px;">✅ <strong>Nonce regenerado exitosamente</strong></div>';
+                    html += '<div style="margin: 5px 0; padding: 5px; background: #f8f8f8;">Antes: <span style="color: #999;">' + nonceAntes.substring(0, 20) + '...</span></div>';
+                    html += '<div style="margin: 5px 0; padding: 5px; background: #e8f5e9;">Ahora: <span style="color: #28a745; font-weight: bold;">' + nonceNuevo.substring(0, 20) + '...</span></div>';
+                    html += '<div style="margin: 5px 0; color: #666;">Hora: ' + timestamp.toLocaleTimeString() + '</div>';
+                    html += '<div style="margin: 5px 0; color: ' + (nonceAntes !== nonceNuevo ? '#28a745' : '#dc3545') + ';">';
+                    html += nonceAntes !== nonceNuevo ? '✅ Nonces diferentes (correcto)' : '❌ Nonces iguales (error)';
+                    html += '</div></div>';
+
+                    $result.html(html);
+                } else {
+                    $result.html('<div style="color: #dc3545;">❌ Error: No se recibió nonce</div>');
+                }
+
+                $button.prop('disabled', false).text('Probar Regeneración de Nonce');
+            },
+            error: function(xhr, status, error) {
+                $result.html('<div style="color: #dc3545;">❌ Error de red: ' + error + '</div>');
+                $button.prop('disabled', false).text('Probar Regeneración de Nonce');
+            }
+        });
+    });
+
 })(jQuery);

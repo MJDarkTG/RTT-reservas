@@ -305,6 +305,17 @@ class RTT_Shortcode {
                     </p>
                 </div>
                 <?php endif; ?>
+
+                <!-- TEMPORAL: Botón de prueba del nonce - ELIMINAR EN PRODUCCIÓN -->
+                <div style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 8px; text-align: center;">
+                    <p style="margin: 0 0 10px; font-size: 13px; color: #666;">
+                        🧪 <strong>Modo de Prueba - Nonce</strong>
+                    </p>
+                    <button type="button" id="rtt-test-nonce" style="padding: 10px 20px; background: #0073aa; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                        Probar Regeneración de Nonce
+                    </button>
+                    <div id="rtt-nonce-test-result" style="margin-top: 10px; font-size: 12px; font-family: monospace;"></div>
+                </div>
             </form>
 
             <!-- Template para pasajero (usado por JS) -->
