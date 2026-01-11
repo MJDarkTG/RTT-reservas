@@ -456,19 +456,13 @@ class RTT_Ajax {
      */
     public function refresh_nonce() {
         // No requiere verificación de nonce porque estamos generando uno nuevo
-        // Solo verificamos que la petición venga de un usuario autenticado o visitante
 
         // Generar nuevo nonce
         $new_nonce = wp_create_nonce('rtt_reserva_nonce');
 
-        // Verificar que el nonce generado es válido (para demostración)
-        $is_valid = wp_verify_nonce($new_nonce, 'rtt_reserva_nonce');
-
         wp_send_json_success([
             'nonce' => $new_nonce,
-            'timestamp' => current_time('timestamp'),
-            'is_valid' => $is_valid ? true : false, // Para debugging
-            'tick' => wp_nonce_tick() // Mostrar el "tick" actual de WordPress
+            'timestamp' => current_time('timestamp')
         ]);
     }
 }
