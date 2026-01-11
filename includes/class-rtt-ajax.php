@@ -449,4 +449,21 @@ class RTT_Ajax {
 
         wp_send_json_success();
     }
+
+    /**
+     * Regenerar nonce para mantener sesión activa
+     * Se llama automáticamente cada 10 minutos desde JavaScript
+     */
+    public function refresh_nonce() {
+        // No requiere verificación de nonce porque estamos generando uno nuevo
+        // Solo verificamos que la petición venga de un usuario autenticado o visitante
+
+        // Generar nuevo nonce
+        $new_nonce = wp_create_nonce('rtt_reserva_nonce');
+
+        wp_send_json_success([
+            'nonce' => $new_nonce,
+            'timestamp' => current_time('timestamp')
+        ]);
+    }
 }

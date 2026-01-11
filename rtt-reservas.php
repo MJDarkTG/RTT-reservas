@@ -181,6 +181,8 @@ final class RTT_Reservas {
         $ajax = new RTT_Ajax();
         add_action('wp_ajax_rtt_submit_reserva', [$ajax, 'submit_reserva']);
         add_action('wp_ajax_nopriv_rtt_submit_reserva', [$ajax, 'submit_reserva']);
+        add_action('wp_ajax_rtt_refresh_nonce', [$ajax, 'refresh_nonce']);
+        add_action('wp_ajax_nopriv_rtt_refresh_nonce', [$ajax, 'refresh_nonce']);
         add_action('wp_ajax_rtt_get_tours', [$ajax, 'get_tours']);
         add_action('wp_ajax_nopriv_rtt_get_tours', [$ajax, 'get_tours']);
 

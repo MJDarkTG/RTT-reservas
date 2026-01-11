@@ -71,6 +71,55 @@
         $.post(rttReservas.ajaxUrl, data);
     }
 
+    /**
+     * Regenerar nonce automáticamente para evitar expiración
+     * Se ejecuta cada 10 minutos mientras el formulario está activo
+     */
+    function refreshNonce() {
+        if (typeof rttReservas === 'undefined') {
+            return;
+        }
+
+        $.ajax({
+            url: rttReservas.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'rtt_refresh_nonce'
+            },
+            success: function(response) {
+                if (response.success && response.data.nonce) {
+                    // Actualizar el campo oculto del nonce en el formulario
+                    $('input[name="rtt_nonce"]').val(response.data.nonce);
+
+                    // Log silencioso para debugging (solo en consola si está activa)
+                    if (window.console && console.log) {
+                        console.log('RTT: Nonce refreshed successfully at ' + new Date().toLocaleTimeString());
+                    }
+                }
+            },
+            error: function() {
+                // Fallo silencioso - no molestamos al usuario
+                if (window.console && console.warn) {
+                    console.warn('RTT: Failed to refresh nonce');
+                }
+            }
+        });
+    }
+
+    /**
+     * Iniciar regeneración automática de nonce
+     * Se ejecuta cada 10 minutos (600,000 ms)
+     */
+    function startNonceRefresh() {
+        // Refrescar cada 10 minutos (10 * 60 * 1000 = 600000 ms)
+        setInterval(refreshNonce, 600000);
+
+        // Log de inicio
+        if (window.console && console.log) {
+            console.log('RTT: Nonce auto-refresh started (every 10 minutes)');
+        }
+    }
+
     // Inicialización
     $(document).ready(function() {
         // Solo inicializar si hay un formulario visible (no en modal oculto)
@@ -103,6 +152,9 @@
         initValidation($form);
         initFlagSelects();
         initPlanSelector($form);
+
+        // Iniciar regeneración automática de nonce para evitar expiración
+        startNonceRefresh();
 
         initialized = true;
 
