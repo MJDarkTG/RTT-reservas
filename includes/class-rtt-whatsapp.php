@@ -51,17 +51,18 @@ class RTT_WhatsApp {
 
         $config = self::get_config();
 
-        // Preparar URL con parámetros
-        $url = add_query_arg([
+        // Construir URL manualmente para evitar problemas de codificación
+        // CallMeBot requiere codificación específica para saltos de línea
+        $url = self::API_URL . '?' . http_build_query([
             'phone' => $config['phone'],
             'text' => $message,
             'apikey' => $config['apikey'],
-        ], self::API_URL);
+        ], '', '&', PHP_QUERY_RFC3986);
 
         // Hacer la petición
         $response = wp_remote_get($url, [
             'timeout' => 30,
-            'sslverify' => true,
+            'sslverify' => false, // Algunos servidores tienen problemas con SSL
         ]);
 
         if (is_wp_error($response)) {
@@ -73,6 +74,13 @@ class RTT_WhatsApp {
 
         $body = wp_remote_retrieve_body($response);
         $code = wp_remote_retrieve_response_code($response);
+
+        // Log para debugging (ver en wp-content/debug.log si WP_DEBUG_LOG está activo)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('RTT WhatsApp - URL: ' . preg_replace('/apikey=[^&]+/', 'apikey=***', $url));
+            error_log('RTT WhatsApp - Response Code: ' . $code);
+            error_log('RTT WhatsApp - Response Body: ' . $body);
+        }
 
         // CallMeBot devuelve "Message queued" si fue exitoso
         if ($code === 200 && strpos($body, 'Message queued') !== false) {
