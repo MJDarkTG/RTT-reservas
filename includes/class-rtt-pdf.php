@@ -262,6 +262,22 @@
           $pdf->Ln(5);
       }
 
+      /**
+       * Extraer precio numérico del texto (ej: "$100 USD" -> 100)
+       */
+      private function extract_price_number($price_text) {
+          if (empty($price_text)) return 0;
+          // Buscar número con o sin decimales después de $
+          if (preg_match('/\$\s*([\d,]+(?:\.\d{2})?)/', $price_text, $matches)) {
+              return floatval(str_replace(',', '', $matches[1]));
+          }
+          // Buscar cualquier número
+          if (preg_match('/([\d,]+(?:\.\d{2})?)/', $price_text, $matches)) {
+              return floatval(str_replace(',', '', $matches[1]));
+          }
+          return 0;
+      }
+
       private function add_tour_info($pdf, $data, $lang) {
           $pdf->SetFillColor(212, 160, 23);
           $pdf->SetTextColor(255, 255, 255);
@@ -273,9 +289,14 @@
           $pdf->SetTextColor(0, 0, 0);
           $pdf->SetFont('Helvetica', '', 10);
 
-          // Altura del recuadro (más alto si hay precio)
+          // Calcular datos de precio
           $has_price = !empty($data['precio_tour']);
-          $rect_height = $has_price ? 27 : 20;
+          $num_pasajeros = isset($data['pasajeros']) ? count($data['pasajeros']) : 1;
+          $precio_unitario = $this->extract_price_number($data['precio_tour'] ?? '');
+          $precio_total = $precio_unitario * $num_pasajeros;
+
+          // Altura del recuadro (más alto si hay precio con desglose)
+          $rect_height = $has_price ? 40 : 20;
 
           $y_start = $pdf->GetY();
           $pdf->Rect(15, $y_start, 180, $rect_height, 'F');
@@ -292,18 +313,45 @@
           $fecha = date('d/m/Y', strtotime($data['fecha']));
           $pdf->SetTextColor(124, 179, 66);
           $pdf->SetFont('Helvetica', 'B', 11);
-          $pdf->Cell(60, 6, $fecha, 0, 0, 'L');
+          $pdf->Cell(0, 6, $fecha, 0, 1, 'L');
 
-          // Mostrar precio si existe
-          if ($has_price) {
+          // Mostrar desglose de precios si existe
+          if ($has_price && $precio_unitario > 0) {
+              $pdf->SetX(20);
+              $pdf->SetTextColor(0, 0, 0);
+              $pdf->SetFont('Helvetica', 'B', 10);
+              $pdf->Cell(40, 6, ($lang === 'en' ? 'Price per person:' : 'Precio por persona:'), 0, 0, 'L');
+              $pdf->SetFont('Helvetica', '', 10);
+              $pdf->Cell(0, 6, rtt_utf8_to_iso($data['precio_tour']), 0, 1, 'L');
+
+              $pdf->SetX(20);
+              $pdf->SetFont('Helvetica', 'B', 10);
+              $pdf->Cell(40, 6, ($lang === 'en' ? 'Passengers:' : 'Pasajeros:'), 0, 0, 'L');
+              $pdf->SetFont('Helvetica', '', 10);
+              $pdf->Cell(0, 6, $num_pasajeros, 0, 1, 'L');
+
+              // Linea separadora
+              $pdf->SetX(20);
+              $pdf->SetDrawColor(212, 160, 23);
+              $pdf->Line(20, $pdf->GetY(), 100, $pdf->GetY());
+              $pdf->Ln(2);
+
+              // Total destacado
+              $pdf->SetX(20);
+              $pdf->SetFont('Helvetica', 'B', 11);
+              $pdf->Cell(40, 6, 'TOTAL:', 0, 0, 'L');
+              $pdf->SetTextColor(212, 160, 23);
+              $pdf->SetFont('Helvetica', 'B', 12);
+              $pdf->Cell(0, 6, '$' . number_format($precio_total, 2) . ' USD', 0, 1, 'L');
+          } elseif ($has_price) {
+              // Si hay precio pero no se pudo extraer el número, mostrar como antes
+              $pdf->SetX(20);
               $pdf->SetTextColor(0, 0, 0);
               $pdf->SetFont('Helvetica', 'B', 10);
               $pdf->Cell(25, 6, ($lang === 'en' ? 'Price:' : 'Precio:'), 0, 0, 'L');
               $pdf->SetTextColor(212, 160, 23);
               $pdf->SetFont('Helvetica', 'B', 11);
               $pdf->Cell(0, 6, rtt_utf8_to_iso($data['precio_tour']), 0, 1, 'L');
-          } else {
-              $pdf->Ln();
           }
 
           $pdf->SetY($y_start + $rect_height + 2);

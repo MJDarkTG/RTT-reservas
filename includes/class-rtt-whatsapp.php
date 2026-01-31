@@ -112,6 +112,20 @@ class RTT_WhatsApp {
     }
 
     /**
+     * Extraer precio numérico del texto (ej: "$100 USD" -> 100)
+     */
+    private static function extract_price_number($price_text) {
+        if (empty($price_text)) return 0;
+        if (preg_match('/\$\s*([\d,]+(?:\.\d{2})?)/', $price_text, $matches)) {
+            return floatval(str_replace(',', '', $matches[1]));
+        }
+        if (preg_match('/([\d,]+(?:\.\d{2})?)/', $price_text, $matches)) {
+            return floatval(str_replace(',', '', $matches[1]));
+        }
+        return 0;
+    }
+
+    /**
      * Enviar notificación de nueva reserva
      *
      * @param object $reserva Datos de la reserva
@@ -120,6 +134,11 @@ class RTT_WhatsApp {
     public static function send_new_reservation_alert($reserva) {
         // Formatear fecha
         $fecha_tour = date_i18n('d/m/Y', strtotime($reserva->fecha_tour));
+
+        // Calcular total
+        $precio_unitario = self::extract_price_number($reserva->precio ?? '');
+        $num_pasajeros = intval($reserva->cantidad_pasajeros);
+        $precio_total = $precio_unitario * $num_pasajeros;
 
         // Construir mensaje
         $message = "*Nueva Reserva RTT*\n\n";
@@ -130,8 +149,15 @@ class RTT_WhatsApp {
         $message .= "Email: {$reserva->email}\n";
         $message .= "Tel: {$reserva->telefono}\n";
         $message .= "Pais: {$reserva->pais}\n";
-        $message .= "Pasajeros: {$reserva->cantidad_pasajeros}\n\n";
-        $message .= "Ver en admin: " . admin_url("admin.php?page=rtt-reservas-list&reserva={$reserva->id}");
+        $message .= "Pasajeros: {$num_pasajeros}\n";
+
+        // Agregar desglose de precios si existe
+        if ($precio_unitario > 0) {
+            $message .= "Precio/persona: \${$precio_unitario} USD\n";
+            $message .= "*TOTAL: \$" . number_format($precio_total, 2) . " USD*\n";
+        }
+
+        $message .= "\nVer en admin: " . admin_url("admin.php?page=rtt-reservas-list&reserva={$reserva->id}");
 
         return self::send_message($message);
     }
