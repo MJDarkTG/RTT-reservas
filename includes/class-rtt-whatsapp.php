@@ -112,18 +112,6 @@ class RTT_WhatsApp {
     }
 
     /**
-     * Extraer precio numérico del texto (ej: "$100 USD" -> 100)
-     * Solo extrae si el texto contiene "$" para evitar falsos positivos
-     */
-    private static function extract_price_number($price_text) {
-        if (empty($price_text) || strpos($price_text, '$') === false) return 0;
-        if (preg_match('/\$\s*([\d,]+(?:\.\d{2})?)/', $price_text, $matches)) {
-            return floatval(str_replace(',', '', $matches[1]));
-        }
-        return 0;
-    }
-
-    /**
      * Enviar notificación de nueva reserva
      *
      * @param array $data Datos de la reserva (del formulario)
@@ -135,10 +123,6 @@ class RTT_WhatsApp {
         $fecha_tour = date_i18n('d/m/Y', strtotime($data['fecha']));
         $num_pasajeros = count($data['pasajeros']);
 
-        // Extraer precio del formulario (mismo que usa el PDF)
-        $precio_unitario = self::extract_price_number($data['precio_tour'] ?? '');
-        $precio_total = $precio_unitario * $num_pasajeros;
-
         // Construir mensaje
         $message = "*Nueva Reserva RTT*\n\n";
         $message .= "Codigo: {$codigo}\n";
@@ -147,12 +131,13 @@ class RTT_WhatsApp {
         $message .= "Cliente: {$data['representante']['nombre']}\n";
         $message .= "Email: {$data['representante']['email']}\n";
         $message .= "Tel: {$data['representante']['telefono']}\n";
-        $message .= "Pais: {$data['representante']['pais']}\n";
-        $message .= "Pasajeros: {$num_pasajeros}\n";
+        $message .= "Pais: {$data['representante']['pais']}\n\n";
 
-        // Solo mostrar precio si tiene formato válido
-        if ($precio_unitario > 0) {
-            $message .= "*TOTAL: \$" . number_format($precio_total, 2) . " USD*";
+        // Lista de pasajeros
+        $message .= "*Pasajeros ({$num_pasajeros}):*\n";
+        foreach ($data['pasajeros'] as $i => $pasajero) {
+            $num = $i + 1;
+            $message .= "{$num}. {$pasajero['nombre']}\n";
         }
 
         return self::send_message($message);
