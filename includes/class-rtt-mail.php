@@ -65,6 +65,20 @@ class RTT_Mail {
     }
 
     /**
+     * Extraer precio numérico del texto (ej: "$100 USD" -> 100)
+     */
+    private function extract_price_number($price_text) {
+        if (empty($price_text)) return 0;
+        if (preg_match('/\$\s*([\d,]+(?:\.\d{2})?)/', $price_text, $matches)) {
+            return floatval(str_replace(',', '', $matches[1]));
+        }
+        if (preg_match('/([\d,]+(?:\.\d{2})?)/', $price_text, $matches)) {
+            return floatval(str_replace(',', '', $matches[1]));
+        }
+        return 0;
+    }
+
+    /**
      * Obtener configuración de plantilla con valores por defecto
      */
     private function get_template_config() {
@@ -93,6 +107,8 @@ class RTT_Mail {
 
     private function get_spanish_template($data, $rep, $fecha, $count, $config, $payment_completed) {
         $precio = !empty($data["precio_tour"]) ? $data["precio_tour"] : '';
+        $precio_unitario = $this->extract_price_number($precio);
+        $precio_total = $precio_unitario * $count;
 
         $h = '<!DOCTYPE html><html><body style="margin:0;font-family:Arial;background:#f5f5f5;">';
         $h .= '<table width="100%" style="background:#f5f5f5;padding:20px;"><tr><td align="center">';
@@ -132,10 +148,14 @@ class RTT_Mail {
         $h .= '<h3 style="color:#D4A017;margin:0 0 10px;">DETALLES DEL TOUR</h3>';
         $h .= '<p style="margin:5px 0;"><strong>' . esc_html($data["tour"]) . '</strong></p>';
         $h .= '<p style="margin:5px 0;color:#7CB342;font-size:18px;"><strong>' . $fecha . '</strong></p>';
-        if ($precio) {
+        if ($precio && $precio_unitario > 0) {
             $h .= '<p style="margin:5px 0;color:#D4A017;font-size:16px;"><strong>Precio: ' . esc_html($precio) . '</strong> por persona</p>';
+            $h .= '<p style="margin:5px 0;">' . $count . ' pasajero(s)</p>';
+            $h .= '<hr style="border:none;border-top:1px solid #D4A017;margin:10px 0;">';
+            $h .= '<p style="margin:5px 0;color:#D4A017;font-size:18px;"><strong>TOTAL: $' . number_format($precio_total, 2) . ' USD</strong></p>';
+        } else {
+            $h .= '<p style="margin:5px 0;">' . $count . ' pasajero(s)</p>';
         }
-        $h .= '<p style="margin:5px 0;">' . $count . ' pasajero(s)</p>';
         $h .= '</td></tr></table>';
 
         // Datos del cliente
@@ -165,6 +185,8 @@ class RTT_Mail {
 
     private function get_english_template($data, $rep, $fecha, $count, $config, $payment_completed) {
         $precio = !empty($data["precio_tour"]) ? $data["precio_tour"] : '';
+        $precio_unitario = $this->extract_price_number($precio);
+        $precio_total = $precio_unitario * $count;
 
         $h = '<!DOCTYPE html><html><body style="margin:0;font-family:Arial;background:#f5f5f5;">';
         $h .= '<table width="100%" style="background:#f5f5f5;padding:20px;"><tr><td align="center">';
@@ -204,10 +226,14 @@ class RTT_Mail {
         $h .= '<h3 style="color:#D4A017;margin:0 0 10px;">TOUR DETAILS</h3>';
         $h .= '<p style="margin:5px 0;"><strong>' . esc_html($data["tour"]) . '</strong></p>';
         $h .= '<p style="margin:5px 0;color:#7CB342;font-size:18px;"><strong>' . $fecha . '</strong></p>';
-        if ($precio) {
+        if ($precio && $precio_unitario > 0) {
             $h .= '<p style="margin:5px 0;color:#D4A017;font-size:16px;"><strong>Price: ' . esc_html($precio) . '</strong> per person</p>';
+            $h .= '<p style="margin:5px 0;">' . $count . ' passenger(s)</p>';
+            $h .= '<hr style="border:none;border-top:1px solid #D4A017;margin:10px 0;">';
+            $h .= '<p style="margin:5px 0;color:#D4A017;font-size:18px;"><strong>TOTAL: $' . number_format($precio_total, 2) . ' USD</strong></p>';
+        } else {
+            $h .= '<p style="margin:5px 0;">' . $count . ' passenger(s)</p>';
         }
-        $h .= '<p style="margin:5px 0;">' . $count . ' passenger(s)</p>';
         $h .= '</td></tr></table>';
 
         // Datos del cliente
