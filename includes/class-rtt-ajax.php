@@ -89,10 +89,7 @@ class RTT_Ajax {
 
         // Enviar notificación por WhatsApp (si está habilitado)
         if (RTT_WhatsApp::is_enabled()) {
-            $reserva = RTT_Database::get_reserva($reserva_result['id']);
-            if ($reserva) {
-                RTT_WhatsApp::send_new_reservation_alert($reserva);
-            }
+            RTT_WhatsApp::send_new_reservation_alert($data, $reserva_result['codigo']);
         }
 
         // Establecer rate limit por 10 segundos después de envío exitoso

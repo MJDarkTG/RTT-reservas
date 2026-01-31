@@ -126,27 +126,28 @@ class RTT_WhatsApp {
     /**
      * Enviar notificación de nueva reserva
      *
-     * @param object $reserva Datos de la reserva
+     * @param array $data Datos de la reserva (del formulario)
+     * @param string $codigo Código de la reserva
      * @return array
      */
-    public static function send_new_reservation_alert($reserva) {
+    public static function send_new_reservation_alert($data, $codigo) {
         // Formatear fecha
-        $fecha_tour = date_i18n('d/m/Y', strtotime($reserva->fecha_tour));
-        $num_pasajeros = intval($reserva->cantidad_pasajeros);
+        $fecha_tour = date_i18n('d/m/Y', strtotime($data['fecha']));
+        $num_pasajeros = count($data['pasajeros']);
 
-        // Extraer precio solo si tiene formato válido con $
-        $precio_unitario = self::extract_price_number($reserva->precio ?? '');
+        // Extraer precio del formulario (mismo que usa el PDF)
+        $precio_unitario = self::extract_price_number($data['precio_tour'] ?? '');
         $precio_total = $precio_unitario * $num_pasajeros;
 
         // Construir mensaje
         $message = "*Nueva Reserva RTT*\n\n";
-        $message .= "Codigo: {$reserva->codigo}\n";
-        $message .= "Tour: {$reserva->tour}\n";
+        $message .= "Codigo: {$codigo}\n";
+        $message .= "Tour: {$data['tour']}\n";
         $message .= "Fecha: {$fecha_tour}\n";
-        $message .= "Cliente: {$reserva->nombre_representante}\n";
-        $message .= "Email: {$reserva->email}\n";
-        $message .= "Tel: {$reserva->telefono}\n";
-        $message .= "Pais: {$reserva->pais}\n";
+        $message .= "Cliente: {$data['representante']['nombre']}\n";
+        $message .= "Email: {$data['representante']['email']}\n";
+        $message .= "Tel: {$data['representante']['telefono']}\n";
+        $message .= "Pais: {$data['representante']['pais']}\n";
         $message .= "Pasajeros: {$num_pasajeros}\n";
 
         // Solo mostrar precio si tiene formato válido
