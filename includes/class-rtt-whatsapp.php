@@ -133,11 +133,21 @@ class RTT_WhatsApp {
         $message .= "Tel: {$data['representante']['telefono']}\n";
         $message .= "Pais: {$data['representante']['pais']}\n\n";
 
-        // Lista de pasajeros
+        // Lista de pasajeros con datos completos
         $message .= "*Pasajeros ({$num_pasajeros}):*\n";
         foreach ($data['pasajeros'] as $i => $pasajero) {
             $num = $i + 1;
-            $message .= "{$num}. {$pasajero['nombre']}\n";
+            $fecha_nac = !empty($pasajero['fecha_nacimiento'])
+                ? date('d/m/Y', strtotime($pasajero['fecha_nacimiento']))
+                : '-';
+
+            $message .= "\n{$num}. {$pasajero['nombre']}\n";
+            $message .= "   {$pasajero['tipo_doc']}: {$pasajero['nro_doc']}\n";
+            $message .= "   Nac: {$fecha_nac}\n";
+            $message .= "   {$pasajero['nacionalidad']}";
+            if ($i < $num_pasajeros - 1) {
+                $message .= "\n";
+            }
         }
 
         return self::send_message($message);
